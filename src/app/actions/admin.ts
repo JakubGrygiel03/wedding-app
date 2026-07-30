@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import {
   clearAdminSession,
@@ -116,7 +117,7 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
 
 export async function loginAdmin(
   password: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: false; error: string }> {
   const normalizedPassword = password.trim().replace(/\r/g, "");
 
   if (!verifyAdminPassword(normalizedPassword)) {
@@ -128,13 +129,20 @@ export async function loginAdmin(
       );
     }
 
-    return { success: false, error: "Nieprawidłowe hasło." };
+    const restartHint =
+      process.env.NODE_ENV === "development"
+        ? " Upewnij się, że ADMIN_PASSWORD w .env.local jest poprawne i zrestartuj serwer (npm run dev)."
+        : "";
+
+    return {
+      success: false,
+      error: `Nieprawidłowe hasło.${restartHint}`,
+    };
   }
 
   await setAdminSession();
   revalidatePath("/admin");
-
-  return { success: true };
+  redirect("/admin");
 }
 
 export async function logoutAdmin(): Promise<void> {

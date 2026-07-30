@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { Lock, Loader2 } from "lucide-react";
 
 import { loginAdmin } from "@/app/actions/admin";
@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function AdminLoginForm() {
-  const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -27,14 +26,13 @@ export function AdminLoginForm() {
     setError(null);
 
     startTransition(async () => {
-      const result = await loginAdmin(password.trim());
-
-      if (!result.success) {
+      try {
+        const result = await loginAdmin(password);
         setError(result.error ?? "Nie udało się zalogować.");
-        return;
+      } catch (error) {
+        if (isRedirectError(error)) throw error;
+        setError("Nie udało się zalogować. Spróbuj ponownie.");
       }
-
-      router.refresh();
     });
   }
 
@@ -48,6 +46,13 @@ export function AdminLoginForm() {
           <CardTitle className="text-xl text-foreground">Panel Admina</CardTitle>
           <CardDescription>
             Wprowadź hasło, aby przeglądać odpowiedzi RSVP.
+            {process.env.NODE_ENV === "development" ? (
+              <>
+                {" "}
+                Hasło ustawiasz w pliku <code>.env.local</code> jako{" "}
+                <code>ADMIN_PASSWORD</code> — po zmianie zrestartuj serwer dev.
+              </>
+            ) : null}
           </CardDescription>
         </CardHeader>
 

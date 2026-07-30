@@ -8,7 +8,7 @@ const SESSION_SALT = "wedding-admin-session";
 const FALLBACK_ADMIN_PASSWORD = "wedding-admin-2027";
 
 function normalizePassword(value: string): string {
-  return value.trim().replace(/\r/g, "");
+  return value.trim().replace(/^\uFEFF/, "").replace(/\r/g, "");
 }
 
 function readEnvPassword(
