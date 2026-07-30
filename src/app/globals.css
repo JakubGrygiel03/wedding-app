@@ -9,7 +9,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --color-wedding-primary: var(--wedding-primary);
+  --color-wedding-accent: var(--wedding-accent);
+  --color-wedding-cream: var(--wedding-background);
+  --color-wedding-surface: var(--wedding-surface);
+  --color-wedding-text: var(--wedding-text);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,38 +54,44 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --wedding-primary: #4a6b5d;
+  --wedding-accent: #d4af37;
+  --wedding-background: #faf9f6;
+  --wedding-surface: #ffffff;
+  --wedding-text: #1a1a1a;
+
+  --background: var(--wedding-background);
+  --foreground: var(--wedding-text);
+  --card: var(--wedding-surface);
+  --card-foreground: var(--wedding-text);
+  --popover: var(--wedding-surface);
+  --popover-foreground: var(--wedding-text);
+  --primary: var(--wedding-primary);
+  --primary-foreground: #ffffff;
+  --secondary: color-mix(in srgb, var(--wedding-primary) 8%, var(--wedding-background));
+  --secondary-foreground: var(--wedding-text);
+  --muted: color-mix(in srgb, var(--wedding-primary) 6%, var(--wedding-background));
+  --muted-foreground: color-mix(in srgb, var(--wedding-text) 65%, transparent);
+  --accent: color-mix(in srgb, var(--wedding-accent) 15%, var(--wedding-background));
+  --accent-foreground: var(--wedding-text);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: color-mix(in srgb, var(--wedding-primary) 15%, transparent);
+  --input: color-mix(in srgb, var(--wedding-primary) 20%, transparent);
+  --ring: color-mix(in srgb, var(--wedding-accent) 60%, transparent);
+  --chart-1: var(--wedding-primary);
+  --chart-2: var(--wedding-accent);
+  --chart-3: color-mix(in srgb, var(--wedding-primary) 70%, white);
+  --chart-4: color-mix(in srgb, var(--wedding-accent) 70%, white);
+  --chart-5: color-mix(in srgb, var(--wedding-text) 40%, white);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: var(--wedding-surface);
+  --sidebar-foreground: var(--wedding-text);
+  --sidebar-primary: var(--wedding-primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--wedding-background);
+  --sidebar-accent-foreground: var(--wedding-text);
+  --sidebar-border: color-mix(in srgb, var(--wedding-primary) 15%, transparent);
+  --sidebar-ring: color-mix(in srgb, var(--wedding-accent) 60%, transparent);
 }
 
 .dark {
