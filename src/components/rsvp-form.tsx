@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import confetti from "canvas-confetti";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
-import { Heart, Loader2, Phone, Send } from "lucide-react";
+import { Heart, Loader2, Phone, Send, UserPlus } from "lucide-react";
 
-import { submitRsvp } from "@/app/actions/rsvp";
+import { getGuestByToken, submitRsvp } from "@/app/actions/rsvp";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,23 +29,18 @@ import {
   DIET_OPTIONS,
   rsvpDefaultValues,
   rsvpSchema,
+  type DietOption,
   type RsvpFormValues,
 } from "@/lib/validations/rsvp";
 
+const RSVP_TOKEN_STORAGE_KEY = "wedding-rsvp-token";
 
-function fireConfetti() {
-  confetti({
-    particleCount: 120,
-    spread: 72,
-    origin: { y: 0.7 },
-    colors: [
-      weddingTheme.primary,
-      weddingTheme.accent,
-      weddingTheme.surface,
-      weddingTheme.background,
-    ],
-  });
-}
+const CONFETTI_COLORS = [
+  weddingTheme.primary,
+  weddingTheme.accent,
+  weddingTheme.surface,
+  weddingTheme.background,
+] as const;
 
 export interface RsvpFormProps {
   token?: string;
@@ -162,10 +157,51 @@ function RsvpContactLinks({
   );
 }
 
+function toDietOption(value: string | null | undefined): DietOption {
+  if (value && DIET_OPTIONS.includes(value as DietOption)) {
+    return value as DietOption;
+  }
+
+  return "Standardowa";
+}
+
 export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const fireConfettiRef = useRef<confetti.CreateTypes | null>(null);
   const [isPending, startTransition] = useTransition();
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [guestToken, setGuestToken] = useState<string | undefined>(token);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.setAttribute("aria-hidden", "true");
+    canvas.className =
+      "pointer-events-none absolute inset-0 z-20 h-full w-full";
+    section.appendChild(canvas);
+
+    fireConfettiRef.current = confetti.create(canvas, { resize: true });
+
+    return () => {
+      fireConfettiRef.current = null;
+      canvas.remove();
+    };
+  }, []);
+
+  const fireConfetti = useCallback(() => {
+    fireConfettiRef.current?.({
+      particleCount: 100,
+      spread: 55,
+      startVelocity: 32,
+      origin: { x: 0.5, y: 0.58 },
+      gravity: 1.05,
+      ticks: 180,
+      colors: [...CONFETTI_COLORS],
+    });
+  }, []);
 
   const form = useForm<RsvpFormValues>({
     resolver: zodResolver(rsvpSchema),
@@ -207,13 +243,47 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
     }
   }, [plusOne, form]);
 
+  useEffect(() => {
+    const storedToken =
+      token ?? localStorage.getItem(RSVP_TOKEN_STORAGE_KEY) ?? undefined;
+
+    if (!storedToken) return;
+
+    setGuestToken(storedToken);
+
+    void getGuestByToken(storedToken).then((guest) => {
+      if (!guest) return;
+
+      reset({
+        guestName: guest.guestName,
+        isAttending: guest.isAttending ?? true,
+        plusOne: guest.plusOne,
+        plusOneDiet: guest.plusOneDiet
+          ? toDietOption(guest.plusOneDiet)
+          : undefined,
+        diet: toDietOption(guest.diet),
+        accommodationNeeded: guest.accommodationNeeded,
+        message: guest.message ?? "",
+      });
+      setSubmitted(true);
+    });
+  }, [token, reset]);
+
+  const startNewRsvp = useCallback(() => {
+    localStorage.removeItem(RSVP_TOKEN_STORAGE_KEY);
+    setGuestToken(undefined);
+    setSubmitError(null);
+    setSubmitted(false);
+    reset(rsvpDefaultValues);
+  }, [reset]);
+
   const onSubmit = handleSubmit(
     (values) => {
       setSubmitError(null);
 
       startTransition(async () => {
         try {
-          const result = await submitRsvp(values, token);
+          const result = await submitRsvp(values, guestToken ?? token);
 
           if (!result.success) {
             setSubmitError(result.error);
@@ -225,9 +295,11 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
             return;
           }
 
+          setGuestToken(result.token);
+          localStorage.setItem(RSVP_TOKEN_STORAGE_KEY, result.token);
           setSubmitted(true);
 
-          if (values.isAttending) {
+          if (values.isAttending && !guestToken) {
             fireConfetti();
           }
 
@@ -266,9 +338,10 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
 
   return (
     <section
+      ref={sectionRef}
       id="rsvp"
       className={cn(
-        "scroll-mt-20 bg-secondary px-4 py-16 sm:px-6 sm:py-24",
+        "relative scroll-mt-20 overflow-hidden bg-secondary px-4 py-16 sm:px-6 sm:py-24",
         className,
       )}
       aria-labelledby="rsvp-heading"
@@ -327,21 +400,32 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                 Dziękujemy za odpowiedź!
               </p>
               <p className="mt-2 text-sm text-foreground/65">
-                Wasze RSVP zostało zapisane. Możecie wrócić i zaktualizować je w
-                każdej chwili.
+                Wasze RSVP zostało zapisane. Na tym urządzeniu możecie wrócić i
+                zaktualizować je w każdej chwili.
               </p>
               <RsvpContactLinks
                 intro="W razie pytań lub zmiany planów, możesz się z nami skontaktować:"
                 className="mx-auto mt-8 max-w-md"
               />
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-6 min-h-11 border-primary/25 text-primary"
-                onClick={() => setSubmitted(false)}
-              >
-                Edytuj odpowiedź
-              </Button>
+              <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 w-full border-primary/25 text-primary sm:w-auto"
+                  onClick={() => setSubmitted(false)}
+                >
+                  Edytuj odpowiedź
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-11 w-full text-primary hover:bg-primary/5 sm:w-auto"
+                  onClick={startNewRsvp}
+                >
+                  <UserPlus aria-hidden />
+                  Potwierdź inną osobę
+                </Button>
+              </div>
             </CardContent>
           ) : (
             <form onSubmit={onSubmit}>
@@ -473,7 +557,7 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                 </div>
               </CardContent>
 
-              <CardFooter className="border-t border-primary/10 bg-background/50">
+              <CardFooter className="flex flex-col gap-3 border-t border-primary/10 bg-background/50 sm:flex-row sm:items-center sm:justify-between">
                 <Button
                   type="submit"
                   disabled={isPending}
@@ -491,6 +575,15 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                     </>
                   )}
                 </Button>
+                {guestToken ? (
+                  <button
+                    type="button"
+                    onClick={startNewRsvp}
+                    className="text-sm text-foreground/60 underline-offset-4 hover:text-primary hover:underline"
+                  >
+                    Wypełniasz RSVP dla kogoś innego?
+                  </button>
+                ) : null}
               </CardFooter>
             </form>
           )}

@@ -46,13 +46,6 @@ export function AdminLoginForm() {
           <CardTitle className="text-xl text-foreground">Panel Admina</CardTitle>
           <CardDescription>
             Wprowadź hasło, aby przeglądać odpowiedzi RSVP.
-            {process.env.NODE_ENV === "development" ? (
-              <>
-                {" "}
-                Hasło ustawiasz w pliku <code>.env.local</code> jako{" "}
-                <code>ADMIN_PASSWORD</code> — po zmianie zrestartuj serwer dev.
-              </>
-            ) : null}
           </CardDescription>
         </CardHeader>
 

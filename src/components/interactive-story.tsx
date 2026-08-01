@@ -28,14 +28,14 @@ export const DEFAULT_STORY_STEPS: StoryStep[] = [
   {
     title: "Spotkanie w Mroku Velen",
     text: "To nie była słodka bajka. Poznaliśmy się na larpie 'Tajemnice Velen' – w brutalnym, pełnym napięcia i intryg świecie wiedźmińskiego pogranicza. Wśród błota, szczęku stali, niepewności i mrocznych tajemnic, nasze ścieżki skrzyżowały się po raz pierwszy. Wtedy w tym chaosie narodził się sojusz, który miał przetrwać wszystko.",
-    imageSrc: "/story/step-1-velen.png",
-    imageAlt: "Para w strojach fantasy przy kamiennej bramie zamku",
+    imageSrc: "/story/step-1-sunset.png",
+    imageAlt: "Para w strojach fantasy na polu fioletowych kwiatów o zachodzie słońca",
   },
   {
     title: "Sojusz na Czas Wojny i Pokoju",
     text: "Z brutalnego świata gry szybko przenieśliśmy się do codzienności. Okazało się, że wspólnie potrafimy przetrwać każdą zamieć. Z przelotnego spojrzenia w mroku Velen wyrosła relacja pełna zaufania, wspólnych pasji, wyjazdów i niekończących się rozmów.",
-    imageSrc: "/story/step-2-alliance.png",
-    imageAlt: "Para trzymająca się za ręce w strojach LARP",
+    imageSrc: "/story/step-1-velen.png",
+    imageAlt: "Para w strojach fantasy przy kamiennej bramie zamku",
   },
   {
     title: "Szkocki Przełom: Bach!",
