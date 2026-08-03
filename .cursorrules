@@ -1,15 +1,15 @@
 # Cursor Context: Modern Wedding Management & RSVP Application (Plan Maksimum)
 
-##  Project Overview
+## 🎯 Project Overview
 **Goal:** Create a production-ready, full-stack event application designed for a wedding couple and their guests. Built from the ground up using **Plan Maksimum** architecture to serve as a high-impact portfolio project showcasing advanced Next.js App Router patterns, real-time database management, fine-grained access control, and smooth scroll UX.
 
 - **Target Audience:** Wedding guests (accessing primarily via mobile devices) and recruiters/engineers evaluating full-stack TypeScript, UX, and software engineering capabilities.
 - **Tone & Style:** Elegant, modern, intuitive, performant, and fully accessible.
-- **Language:** Polish (UI Content), English (Code, Commit Messages, and Technical Documentation).
+- **Language:** Polish (UI Content & User Communications), English (Code, Commit Messages, Comments, and Technical Documentation).
 
 ---
 
-##  Tech Stack & Architecture
+## 🛠️ Tech Stack & Architecture
 
 - **Framework:** Next.js (App Router, Server Components, Server Actions, Route Handlers)
 - **Language:** TypeScript (Strict Mode Enabled)
@@ -22,7 +22,7 @@
 
 ---
 
-##  Core Architecture & Features (Plan Maksimum)
+## 🏗️ Core Architecture & Features (Plan Maksimum)
 
 ### 1. Guest Experience (Public & Token-based)
 - **Hero & Countdown:** Interactive cover with newlyweds' names, wedding date, and real-time countdown timer.
@@ -43,7 +43,7 @@
 
 ---
 
-##  Design Guidelines & UX Standards
+## 🎨 Design Guidelines & UX Standards
 
 ### Color Palette
 - **Primary:** Warm Sage Green (`#4A6B5D`)
@@ -64,7 +64,97 @@
 
 ---
 
-##  Database Schema (Supabase PostgreSQL)
+## SEO, Discoverability & Social Sharing (Universal)
+
+Apply these rules to every public-facing page unless the user explicitly opts out (e.g. internal tools, staging-only apps).
+
+### Goals & Scope
+- Optimize for: **crawlability**, **correct indexing**, **rich link previews** (OG/Twitter), **Core Web Vitals**, and **semantic HTML**.
+- SEO rules complement a11y and performance — never trade UX or security for rankings.
+- Lighthouse SEO score is a **technical baseline**, not proof of search rankings.
+- Do NOT keyword-stuff, use hidden text, cloaking, or misleading metadata.
+
+### Project Setup (Single Source of Truth)
+- Centralize site-wide SEO config in one module (e.g. `lib/seo-config.ts` or env):
+  - `siteName`, `siteUrl` (`metadataBase`), default `title` template, default `description`
+  - default OG image path, `locale`, `twitterHandle` (optional)
+- Page-specific metadata overrides only what differs from defaults.
+- Never put secrets, API keys, or admin credentials in metadata, README, or `NEXT_PUBLIC_*` vars.
+
+### Metadata (Next.js App Router — adapt for other frameworks)
+Every indexable public route MUST define:
+- **`title`**: unique, descriptive, ≤ ~60 characters
+- **`description`**: unique summary, ≤ ~155 characters, natural language (no keyword lists)
+- **`metadataBase` / canonical URL**: absolute production URL; one canonical per page
+- **`robots`**: `index, follow` for public pages; `noindex, nofollow` for admin, auth, API, staging, duplicates
+- **Open Graph**: `title`, `description`, `url`, `type`, `locale`, `images[]`
+- **Twitter Card**: `summary_large_image` (or appropriate card type), aligned with OG
+
+For multi-page apps: no duplicate titles/descriptions; use title template (`"%s | SiteName"`).
+
+### Social / Link Previews (Often More Important Than Google)
+- Provide a default OG image: **1200×630 px**, optimized (< 300 KB), readable at thumbnail size.
+- Page-specific OG images when content differs significantly (blog post, product, event).
+- After OG changes, verify with a sharing debugger (Facebook, LinkedIn, or opengraph.xyz).
+
+### Structured Data (JSON-LD)
+- Emit JSON-LD from **server-rendered** HTML only (RSC, layout, page) — not from client-only components.
+- Use schema types that match **visible page content** (Google policy: no mismatch between UI and schema).
+- Common types by project:
+  - **Marketing / SaaS**: `WebSite`, `Organization`, `SoftwareApplication` (if applicable)
+  - **Blog / docs**: `Article`, `BreadcrumbList`, `FAQPage` (if FAQ visible on page)
+  - **E-commerce**: `Product`, `Offer`, `BreadcrumbList`
+  - **Events / bookings**: `Event`
+  - **Local business**: `LocalBusiness`, `PostalAddress`
+- Validate with [Google Rich Results Test](https://search.google.com/test/rich-results) when adding or changing schema.
+
+### Crawling & Indexing
+- Provide **`sitemap.xml`** listing only **indexable** public URLs (with `lastModified` when meaningful).
+- Provide **`robots.txt`**: allow public routes; disallow `/admin`, `/api`, auth callbacks, internal tools.
+- Use **`noindex`** on: login, dashboard, preview, thank-you pages (if duplicate content), search result pages with thin content.
+- Register production domain in **Google Search Console** (and Bing Webmaster if relevant); submit sitemap after deploy.
+
+### HTML Semantics & Content
+- Exactly **one `<h1>`** per page; logical **`h2` → `h3`** hierarchy without skipping levels.
+- Critical page content must be in **initial HTML** (SSR/RSC/static), not only after client hydration.
+- Prefer Server Components / static generation for SEO-critical copy; isolate `"use client"` to interactive islands.
+- Images: meaningful **`alt`** text; decorative images use `alt=""`.
+- Links: descriptive anchor text or **`aria-label`** — avoid generic "click here" / "read more" without context.
+- Set correct **`<html lang="...">`**; add **`hreflang`** only when multiple locales exist.
+
+### Performance = SEO (Core Web Vitals)
+- Targets (mobile): **LCP ≤ 2.5 s**, **CLS ≤ 0.1**, **INP ≤ 200 ms**.
+- LCP element: optimize images (WebP/AVIF, responsive `sizes`, avoid multi-MB assets), prioritize above-the-fold media.
+- Minimize render-blocking JS/CSS; lazy-load below-the-fold media and non-critical scripts.
+- Do not claim "90+ Lighthouse" or "optimized CWV" without measured before/after evidence.
+
+### Security & SEO
+- Admin and API routes: **`noindex`** + auth; not linked from public sitemap.
+- Canonical URLs prevent duplicate indexing (www vs non-www, trailing slash — pick one convention).
+- Use HTTPS in production; `metadataBase` must use `https://`.
+
+### Anti-Patterns (Never Do)
+- Keyword stuffing in title, description, or invisible DOM
+- Fake reviews/ratings in schema
+- Schema for content not shown to users
+- Indexing staging/preview environments
+- Blocking CSS/JS in robots.txt (breaks rendering for Googlebot)
+
+### AI Checklist Before Merging SEO-Related Changes
+- [ ] Unique title + description for affected route(s)?
+- [ ] `metadataBase` / canonical correct for environment?
+- [ ] OG + Twitter tags + image present?
+- [ ] JSON-LD matches visible content and validates?
+- [ ] Sitemap / robots updated if routes changed?
+- [ ] Admin/internal routes excluded from index?
+- [ ] One h1, logical heading order?
+- [ ] Indexable content server-rendered?
+- [ ] LCP/image impact considered?
+- [ ] No secrets in public metadata or docs?
+
+---
+
+## 🗄️ Database Schema & Security (Supabase PostgreSQL)
 
 ```sql
 -- Enable UUID extension
@@ -105,7 +195,7 @@ create table gallery_images (
   display_order int default 0
 );
 
--- Row Level Security (RLS)
+-- Row Level Security (RLS) Configuration
 alter table guests enable row level security;
 alter table timeline_events enable row level security;
 alter table gallery_images enable row level security;
@@ -113,11 +203,13 @@ alter table gallery_images enable row level security;
 -- Public read policies
 create policy "Allow public read access to timeline_events" on timeline_events for select using (true);
 create policy "Allow public read access to gallery_images" on gallery_images for select using (true);
-create policy "Allow guest to update own RSVP via token" on guests for update using (true);
-create policy "Allow public read guest token" on guests for select using (true);
 
-## Folder Structure
+-- Guest Security Policies (Secure Token Verification via Server Actions or Secured Select)
+create policy "Allow public read guest by token" on guests for select using (true);
 
+## 📁 Folder Structure
+
+```text
 ├── app/
 │   ├── (public)/
 │   │   ├── layout.tsx             # Global fonts, OG meta tags, public shell
@@ -149,8 +241,42 @@ create policy "Allow public read guest token" on guests for select using (true);
 │   │   ├── server.ts              # Server-side Supabase client (Cookies / RSC)
 │   │   └── middleware.ts          # Auth session refresh & path protection middleware
 │   ├── utils.ts                   # Helpers (cn, date formats, calendar link generators)
-│   └── validatons/
+│   └── validations/
 │       └── rsvp.ts                # Zod schema definitions for RSVP forms
 ├── middleware.ts                  # Next.js Middleware protecting /admin routes
 └── public/
-    └── og-image.png               # Custom OpenGraph image for WhatsApp/Messenger link previews
+    └── og-image.png               # Custom OpenGraph image for social link previews
+
+## 🎓 Active Learning & Mentorship Protocol
+
+AI must act not only as a coder, but as an active Senior Tech Lead mentor. Follow these strict interaction rules:
+
+1. **Simple Language Policy:** Explain all technical concepts (like Server Components, Hydration, RLS, Optimistic UI) using simple Polish, clear real-world analogies, and step-by-step logic. Think like a mentor explaining concepts to a fast-learning junior.
+2. **Step-by-Step Explanations:** Before generating or editing code, briefly explain (in 2-3 sentences in Polish) WHAT you are going to do and WHY. Avoid academic jargon.
+3. **Trade-off Analysis (Why THIS approach?):** When implementing key architecture patterns, explicitly state in 1-2 sentences why this solution was chosen over simpler/older alternatives (e.g., "We use Server Actions instead of API Routes because...").
+4. **Code Commenting Standards:** Add concise inline English comments to non-obvious logic, TypeScript utility types, or complex hooks. Explain *why* a method was chosen.
+5. **Concept Checks & "💡 Mentor Notes":** If a new advanced feature is introduced (e.g., `useOptimistic`, `revalidatePath`, custom Zod refinement), add a short "💡 Mentor Note" explaining the concept simply.
+6. **Active Comprehension Check:** At the end of non-trivial code generations, ask ONE brief question to verify if the user understands *why* a specific function or pattern was used.
+7. **Highlight Common Pitfalls:** Point out 1 common mistake developers make with the generated code (e.g., "Be careful: forgetting `use client` here will break Framer Motion animations").
+
+---
+
+## 🤖 AI Code Generation & Behavioral Rules
+
+1. **File Size & Single Responsibility:**
+   - Keep files small and modular (aim for 50–150 lines per file, hard limit 200 lines).
+   - Enforce Single Responsibility Principle (SRP): one file = one core task.
+   - If a file exceeds 150 lines, propose how to refactor and split it into smaller modules.
+
+2. **Server vs. Client Components Boundary:**
+   - Keep `page.tsx` and layout files as React Server Components (RSC) whenever possible.
+   - Do NOT mark entire pages with `"use client"`. Extract interactive features (forms, Framer Motion animations) into granular components inside `components/`.
+
+3. **Type Safety & Code Quality:**
+   - Strict TypeScript rules apply. Never use `any` or `@ts-ignore`.
+   - Validate all user input via Zod schemas (`lib/validations/`).
+   - Use explicit return types for Server Actions and critical functions.
+
+4. **Educational & Communication Workflow:**
+   - **Language:** Explain concepts, refactoring reasons, and steps in **Polish**, but write all code, variables, types, and inline comments in **English**.
+   - **Security First:** Ensure RSVP updates are securely handled via Server Actions with server-side Zod validation and token verification.
