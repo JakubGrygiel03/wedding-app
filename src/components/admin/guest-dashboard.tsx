@@ -1,16 +1,25 @@
 "use client";
 
-import { useTransition, type ComponentType } from "react";
+import { useEffect, useMemo, useState, useTransition, type ComponentType } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   BedDouble,
   Download,
   LogOut,
+  Pencil,
+  Plus,
   Salad,
+  Trash2,
   Users,
   UserCheck,
 } from "lucide-react";
 
 import { logoutAdmin, type AdminGuestRow, type AdminStats } from "@/app/actions/admin";
+import { GuestDeleteDialog } from "@/components/admin/guest-delete-dialog";
+import { GuestEditDialog } from "@/components/admin/guest-edit-dialog";
+import { ExpectedRsvpSetting } from "@/components/admin/expected-rsvp-setting";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -29,6 +38,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getOrderedDietCounts } from "@/lib/admin/export-guests";
+import {
+  computeRsvpProgress,
+  parseExpectedCountInput,
+} from "@/lib/admin/rsvp-progress";
+import {
+  GUEST_SORT_LABELS,
+  sortGuestRows,
+  type GuestSortColumn,
+  type SortDirection,
+} from "@/lib/admin/sort-guests";
 import { cn } from "@/lib/utils";
 
 function formatBoolean(value: boolean): string {
@@ -92,15 +111,104 @@ function StatCard({
   );
 }
 
+function SortableTableHead({
+  column,
+  label,
+  sort,
+  onSort,
+  className,
+}: {
+  column: GuestSortColumn;
+  label: string;
+  sort: { column: GuestSortColumn; direction: SortDirection } | null;
+  onSort: (column: GuestSortColumn) => void;
+  className?: string;
+}) {
+  const isActive = sort?.column === column;
+  const direction = isActive ? sort.direction : null;
+  const SortIcon =
+    direction === "asc" ? ArrowUp : direction === "desc" ? ArrowDown : ArrowUpDown;
+
+  return (
+    <TableHead className={className}>
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className={cn(
+          "inline-flex min-h-10 items-center gap-1.5 rounded-md px-1 py-1 text-left font-medium transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          isActive && "text-primary",
+        )}
+        aria-label={`Sortuj według: ${label}${
+          direction === "asc"
+            ? ", rosnąco"
+            : direction === "desc"
+              ? ", malejąco"
+              : ""
+        }`}
+      >
+        {label}
+        <SortIcon className="size-3.5 shrink-0 opacity-70" aria-hidden />
+      </button>
+    </TableHead>
+  );
+}
+
 export function GuestDashboard({
   guests,
   stats,
+  expectedRsvpCount,
 }: {
   guests: AdminGuestRow[];
   stats: AdminStats;
+  expectedRsvpCount: number | null;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editingGuest, setEditingGuest] = useState<AdminGuestRow | null>(null);
+  const [deletingGuest, setDeletingGuest] = useState<AdminGuestRow | null>(null);
+  const [sort, setSort] = useState<{
+    column: GuestSortColumn;
+    direction: SortDirection;
+  } | null>(null);
+  const [expectedInput, setExpectedInput] = useState(
+    expectedRsvpCount !== null ? String(expectedRsvpCount) : "",
+  );
   const dietCounts = getOrderedDietCounts(stats.dietCounts);
+
+  useEffect(() => {
+    setExpectedInput(
+      expectedRsvpCount !== null ? String(expectedRsvpCount) : "",
+    );
+  }, [expectedRsvpCount]);
+
+  const effectiveExpectedCount = useMemo(() => {
+    const draft = parseExpectedCountInput(expectedInput);
+    if (draft !== null) return draft;
+    return expectedRsvpCount;
+  }, [expectedInput, expectedRsvpCount]);
+
+  const rsvpProgress = useMemo(
+    () => computeRsvpProgress(stats, effectiveExpectedCount),
+    [stats, effectiveExpectedCount],
+  );
+
+  const sortedGuests = useMemo(() => {
+    if (!sort) return guests;
+    return sortGuestRows(guests, sort.column, sort.direction);
+  }, [guests, sort]);
+
+  function handleSort(column: GuestSortColumn) {
+    setSort((current) => {
+      if (current?.column === column) {
+        return {
+          column,
+          direction: current.direction === "asc" ? "desc" : "asc",
+        };
+      }
+
+      return { column, direction: "asc" };
+    });
+  }
 
   function handleLogout() {
     startTransition(async () => {
@@ -157,13 +265,21 @@ export function GuestDashboard({
           <StatCard
             title="Łącznie gości"
             value={stats.totalGuests}
-            description={`Potwierdzeni: ${stats.attendingCount} · Odmowy: ${stats.declinedCount}`}
+            description={
+              rsvpProgress.expectedCount !== null
+                ? `Odpowiedzi: ${rsvpProgress.respondedCount} / ${rsvpProgress.expectedCount} · Oczekujący: ${rsvpProgress.awaitingResponses}`
+                : `Potwierdzeni: ${stats.attendingCount} · Odmowy: ${stats.declinedCount}`
+            }
             icon={Users}
           />
           <StatCard
             title="Potwierdzeni"
             value={stats.attendingCount}
-            description={`Oczekujący: ${stats.pendingCount}`}
+            description={
+              rsvpProgress.awaitingResponses !== null
+                ? `Oczekujący: ${rsvpProgress.awaitingResponses}`
+                : `Oczekujący w bazie: ${stats.pendingCount}`
+            }
             icon={UserCheck}
           />
           <StatCard
@@ -215,39 +331,94 @@ export function GuestDashboard({
 
         <Card className="border-primary/15 bg-card shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg text-foreground">
-              Lista odpowiedzi
-            </CardTitle>
+            <div className="flex items-center justify-between gap-4">
+              <CardTitle className="text-lg text-foreground">
+                Lista odpowiedzi
+              </CardTitle>
+
+              <Button
+                type="button"
+                className="min-h-11 shrink-0"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus aria-hidden />
+                Dodaj gościa
+              </Button>
+            </div>
             <CardDescription>
               {guests.length} {guests.length === 1 ? "wpis" : "wpisów"} w bazie
               danych.
+              {sort ? (
+                <>
+                  {" "}
+                  · Sortowanie: {GUEST_SORT_LABELS[sort.column]} (
+                  {sort.direction === "asc" ? "rosnąco" : "malejąco"})
+                </>
+              ) : null}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-0 sm:px-(--card-spacing)">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Imię</TableHead>
-                  <TableHead>Obecność</TableHead>
-                  <TableHead>Dieta</TableHead>
-                  <TableHead>+1</TableHead>
-                  <TableHead>Dieta +1</TableHead>
-                  <TableHead>Nocleg</TableHead>
-                  <TableHead className="min-w-[12rem]">Wiadomość</TableHead>
+                  <SortableTableHead
+                    column="guestName"
+                    label="Imię"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    column="isAttending"
+                    label="Obecność"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    column="diet"
+                    label="Dieta"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    column="plusOne"
+                    label="+1"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    column="plusOneDiet"
+                    label="Dieta +1"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    column="accommodationNeeded"
+                    label="Nocleg"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    column="message"
+                    label="Wiadomość"
+                    sort={sort}
+                    onSort={handleSort}
+                    className="min-w-[12rem]"
+                  />
+                  <TableHead className="w-[8.5rem] text-right">Akcje</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {guests.length === 0 ? (
+                {sortedGuests.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="py-10 text-center text-foreground/60"
                     >
                       Brak odpowiedzi RSVP.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  guests.map((guest) => (
+                  sortedGuests.map((guest) => (
                     <TableRow key={guest.id}>
                       <TableCell className="font-medium text-foreground">
                         {guest.guestName}
@@ -262,6 +433,30 @@ export function GuestDashboard({
                       <TableCell className="max-w-xs whitespace-normal text-foreground/75">
                         {guest.message ?? "—"}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-primary"
+                            aria-label={`Edytuj ${guest.guestName}`}
+                            onClick={() => setEditingGuest(guest)}
+                          >
+                            <Pencil aria-hidden />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-destructive hover:text-destructive"
+                            aria-label={`Usuń ${guest.guestName}`}
+                            onClick={() => setDeletingGuest(guest)}
+                          >
+                            <Trash2 aria-hidden />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -269,6 +464,37 @@ export function GuestDashboard({
             </Table>
           </CardContent>
         </Card>
+
+        <GuestEditDialog
+          mode="create"
+          guest={null}
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+        />
+
+        <GuestEditDialog
+          mode="edit"
+          guest={editingGuest}
+          open={editingGuest !== null}
+          onOpenChange={(open) => {
+            if (!open) setEditingGuest(null);
+          }}
+        />
+
+        <GuestDeleteDialog
+          guest={deletingGuest}
+          open={deletingGuest !== null}
+          onOpenChange={(open) => {
+            if (!open) setDeletingGuest(null);
+          }}
+        />
+
+        <ExpectedRsvpSetting
+          inputValue={expectedInput}
+          onInputChange={setExpectedInput}
+          progress={rsvpProgress}
+          stats={stats}
+        />
       </div>
     </div>
   );

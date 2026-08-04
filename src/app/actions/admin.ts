@@ -15,6 +15,24 @@ import {
   getSupabaseEnvErrorMessage,
   SupabaseEnvError,
 } from "@/lib/supabase/env";
+import {
+  adminGuestSchema,
+  type AdminGuestFormValues,
+} from "@/lib/validations/admin-guest";
+import {
+  EXPECTED_RSVP_SETTING_TOKEN,
+  filterGuestRows,
+  parseExpectedRsvpCount,
+} from "@/lib/admin/expected-rsvp-storage";
+import { expectedRsvpCountSchema } from "@/lib/validations/admin-settings";
+
+export type AdminMutationResult =
+  | { success: true }
+  | { success: false; error: string };
+
+export type AdminCreateGuestResult =
+  | { success: true; token: string }
+  | { success: false; error: string };
 
 export type AdminGuestRow = {
   id: string;
@@ -33,13 +51,19 @@ export type AdminStats = {
   attendingCount: number;
   declinedCount: number;
   pendingCount: number;
+  respondedCount: number;
   dietCounts: Record<string, number>;
   plusOneCount: number;
   accommodationCount: number;
 };
 
 export type AdminGuestsResult =
-  | { success: true; guests: AdminGuestRow[]; stats: AdminStats }
+  | {
+      success: true;
+      guests: AdminGuestRow[];
+      stats: AdminStats;
+      expectedRsvpCount: number | null;
+    }
   | { success: false; error: string };
 
 function mapGuestRow(guest: {
@@ -76,6 +100,7 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
   let attendingCount = 0;
   let declinedCount = 0;
   let pendingCount = 0;
+  let respondedCount = 0;
   let plusOneCount = 0;
   let accommodationCount = 0;
 
@@ -85,6 +110,7 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
 
     if (guest.isAttending === true) {
       attendingCount += headcount;
+      respondedCount += 1;
 
       if (guest.diet) {
         dietCounts[guest.diet] = (dietCounts[guest.diet] ?? 0) + 1;
@@ -96,6 +122,7 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
       }
     } else if (guest.isAttending === false) {
       declinedCount += 1;
+      respondedCount += 1;
     } else {
       pendingCount += 1;
     }
@@ -109,10 +136,28 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
     attendingCount,
     declinedCount,
     pendingCount,
+    respondedCount,
     dietCounts,
     plusOneCount,
     accommodationCount,
   };
+}
+
+async function fetchExpectedRsvpCount(
+  supabase: ReturnType<typeof createAdminClient>,
+): Promise<number | null> {
+  const { data, error } = await supabase
+    .from("guests")
+    .select("message")
+    .eq("token", EXPECTED_RSVP_SETTING_TOKEN)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[Admin] fetchExpectedRsvpCount:", error.message);
+    return null;
+  }
+
+  return parseExpectedRsvpCount(data?.message);
 }
 
 export async function loginAdmin(
@@ -160,7 +205,7 @@ export async function getAdminGuests(): Promise<AdminGuestsResult> {
     const { data, error } = await supabase
       .from("guests")
       .select(
-        "id, guest_name, is_attending, dietary_requirements, plus_one, plus_one_diet, accommodation_needed, message, updated_at",
+        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_diet, accommodation_needed, message, updated_at",
       )
       .order("updated_at", { ascending: false });
 
@@ -169,12 +214,15 @@ export async function getAdminGuests(): Promise<AdminGuestsResult> {
       return { success: false, error: error.message };
     }
 
-    const guests = (data ?? []).map(mapGuestRow);
+    const guests = filterGuestRows(data ?? []).map(mapGuestRow);
+
+    const expectedRsvpCount = await fetchExpectedRsvpCount(supabase);
 
     return {
       success: true,
       guests,
       stats: computeStats(guests),
+      expectedRsvpCount,
     };
   } catch (error) {
     if (error instanceof SupabaseEnvError) {
@@ -183,6 +231,282 @@ export async function getAdminGuests(): Promise<AdminGuestsResult> {
 
     const message = error instanceof Error ? error.message : "Nieznany błąd.";
     console.error("[Admin] getAdminGuests:", message);
+
+    return { success: false, error: message };
+  }
+}
+
+function mapAdminGuestPayload(data: AdminGuestFormValues) {
+  const isAttending = data.isAttending === true;
+
+  return {
+    guest_name: data.guestName,
+    is_attending: data.isAttending,
+    plus_one: isAttending ? data.plusOne : false,
+    plus_one_diet:
+      isAttending && data.plusOne ? (data.plusOneDiet ?? null) : null,
+    dietary_requirements: isAttending ? (data.diet ?? null) : null,
+    accommodation_needed: isAttending ? data.accommodationNeeded : false,
+    message: data.message?.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export async function updateAdminGuest(
+  guestId: string,
+  values: AdminGuestFormValues,
+): Promise<AdminMutationResult> {
+  if (!(await isAdminAuthenticated())) {
+    return { success: false, error: "Brak autoryzacji." };
+  }
+
+  const parsed = adminGuestSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Nieprawidłowe dane formularza.",
+    };
+  }
+
+  const id = guestId.trim();
+
+  if (!id) {
+    return { success: false, error: "Brak identyfikatora gościa." };
+  }
+
+  try {
+    const supabase = createAdminClient();
+    const { data: existing, error: fetchError } = await supabase
+      .from("guests")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("[Admin] updateAdminGuest fetch:", fetchError.message);
+      return { success: false, error: fetchError.message };
+    }
+
+    if (!existing) {
+      return { success: false, error: "Nie znaleziono gościa." };
+    }
+
+    const { error: updateError } = await supabase
+      .from("guests")
+      .update(mapAdminGuestPayload(parsed.data))
+      .eq("id", id);
+
+    if (updateError) {
+      console.error("[Admin] updateAdminGuest:", updateError.message);
+      return { success: false, error: updateError.message };
+    }
+
+    revalidatePath("/admin");
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof SupabaseEnvError) {
+      return { success: false, error: getSupabaseEnvErrorMessage(error) };
+    }
+
+    const message = error instanceof Error ? error.message : "Nieznany błąd.";
+    console.error("[Admin] updateAdminGuest:", message);
+
+    return { success: false, error: message };
+  }
+}
+
+export async function setExpectedRsvpCount(
+  count: number | null,
+): Promise<AdminMutationResult> {
+  if (!(await isAdminAuthenticated())) {
+    return { success: false, error: "Brak autoryzacji." };
+  }
+
+  if (count !== null) {
+    const parsed = expectedRsvpCountSchema.safeParse(count);
+
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message ?? "Nieprawidłowa liczba zaproszeń.",
+      };
+    }
+  }
+
+  try {
+    const supabase = createAdminClient();
+    const { data: existing, error: fetchError } = await supabase
+      .from("guests")
+      .select("id")
+      .eq("token", EXPECTED_RSVP_SETTING_TOKEN)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("[Admin] setExpectedRsvpCount fetch:", fetchError.message);
+      return { success: false, error: fetchError.message };
+    }
+
+    if (count === null) {
+      if (existing) {
+        const { error } = await supabase
+          .from("guests")
+          .delete()
+          .eq("id", existing.id);
+
+        if (error) {
+          console.error("[Admin] setExpectedRsvpCount delete:", error.message);
+          return { success: false, error: error.message };
+        }
+      }
+    } else if (existing) {
+      const { error } = await supabase
+        .from("guests")
+        .update({
+          message: String(count),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+
+      if (error) {
+        console.error("[Admin] setExpectedRsvpCount update:", error.message);
+        return { success: false, error: error.message };
+      }
+    } else {
+      const { error } = await supabase.from("guests").insert({
+        token: EXPECTED_RSVP_SETTING_TOKEN,
+        guest_name: "[Ustawienie admina]",
+        is_attending: null,
+        plus_one: false,
+        plus_one_diet: null,
+        dietary_requirements: null,
+        accommodation_needed: false,
+        message: String(count),
+      });
+
+      if (error) {
+        console.error("[Admin] setExpectedRsvpCount insert:", error.message);
+        return { success: false, error: error.message };
+      }
+    }
+
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof SupabaseEnvError) {
+      return { success: false, error: getSupabaseEnvErrorMessage(error) };
+    }
+
+    const message = error instanceof Error ? error.message : "Nieznany błąd.";
+    console.error("[Admin] setExpectedRsvpCount:", message);
+
+    return { success: false, error: message };
+  }
+}
+
+export async function createAdminGuest(
+  values: AdminGuestFormValues,
+): Promise<AdminCreateGuestResult> {
+  if (!(await isAdminAuthenticated())) {
+    return { success: false, error: "Brak autoryzacji." };
+  }
+
+  const parsed = adminGuestSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Nieprawidłowe dane formularza.",
+    };
+  }
+
+  const token = crypto.randomUUID();
+
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase.from("guests").insert({
+      ...mapAdminGuestPayload(parsed.data),
+      token,
+    });
+
+    if (error) {
+      console.error("[Admin] createAdminGuest:", error.message);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/admin");
+    revalidatePath("/");
+
+    return { success: true, token };
+  } catch (error) {
+    if (error instanceof SupabaseEnvError) {
+      return { success: false, error: getSupabaseEnvErrorMessage(error) };
+    }
+
+    const message = error instanceof Error ? error.message : "Nieznany błąd.";
+    console.error("[Admin] createAdminGuest:", message);
+
+    return { success: false, error: message };
+  }
+}
+
+export async function deleteAdminGuest(
+  guestId: string,
+): Promise<AdminMutationResult> {
+  if (!(await isAdminAuthenticated())) {
+    return { success: false, error: "Brak autoryzacji." };
+  }
+
+  const id = guestId.trim();
+
+  if (!id) {
+    return { success: false, error: "Brak identyfikatora gościa." };
+  }
+
+  try {
+    const supabase = createAdminClient();
+    const { data: existing, error: fetchError } = await supabase
+      .from("guests")
+      .select("id, token")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("[Admin] deleteAdminGuest fetch:", fetchError.message);
+      return { success: false, error: fetchError.message };
+    }
+
+    if (!existing) {
+      return { success: false, error: "Nie znaleziono gościa." };
+    }
+
+    if (existing.token === EXPECTED_RSVP_SETTING_TOKEN) {
+      return {
+        success: false,
+        error: "Nie można usunąć wiersza ustawień admina.",
+      };
+    }
+
+    const { error } = await supabase.from("guests").delete().eq("id", id);
+
+    if (error) {
+      console.error("[Admin] deleteAdminGuest:", error.message);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath("/admin");
+    revalidatePath("/");
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof SupabaseEnvError) {
+      return { success: false, error: getSupabaseEnvErrorMessage(error) };
+    }
+
+    const message = error instanceof Error ? error.message : "Nieznany błąd.";
+    console.error("[Admin] deleteAdminGuest:", message);
 
     return { success: false, error: message };
   }

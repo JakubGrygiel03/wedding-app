@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
+import { filterGuestRows } from "@/lib/admin/expected-rsvp-storage";
 import { guestsToCsv } from "@/lib/admin/export-guests";
 import type { AdminGuestRow } from "@/app/actions/admin";
 
@@ -15,7 +16,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("guests")
       .select(
-        "id, guest_name, is_attending, dietary_requirements, plus_one, plus_one_diet, accommodation_needed, message, updated_at",
+        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_diet, accommodation_needed, message, updated_at",
       )
       .order("updated_at", { ascending: false });
 
@@ -24,7 +25,7 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const guests: AdminGuestRow[] = (data ?? []).map((guest) => ({
+    const guests: AdminGuestRow[] = filterGuestRows(data ?? []).map((guest) => ({
       id: guest.id,
       guestName: guest.guest_name,
       isAttending: guest.is_attending,

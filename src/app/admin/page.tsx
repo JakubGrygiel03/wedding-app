@@ -1,10 +1,11 @@
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
-import { GuestDashboard } from "@/components/admin/guest-dashboard";
+import { AdminPanel } from "@/components/admin/admin-panel";
 import { getAdminGuests } from "@/app/actions/admin";
+import { getAdminScheduleEvents } from "@/app/actions/schedule";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 
 export const metadata = {
-  title: "Admin RSVP | Wedding App",
+  title: "Admin | Wedding App",
   robots: { index: false, follow: false },
 };
 
@@ -15,20 +16,43 @@ export default async function AdminPage() {
     return <AdminLoginForm />;
   }
 
-  const result = await getAdminGuests();
+  const [guestsResult, scheduleResult] = await Promise.all([
+    getAdminGuests(),
+    getAdminScheduleEvents(),
+  ]);
 
-  if (!result.success) {
+  if (!guestsResult.success) {
     return (
       <div className="flex min-h-full flex-1 items-center justify-center bg-background px-4 py-16">
         <div className="max-w-md rounded-xl border border-destructive/30 bg-card p-6 text-center shadow-sm">
           <h1 className="text-lg font-semibold text-foreground">
-            Nie udało się pobrać danych
+            Nie udało się pobrać danych RSVP
           </h1>
-          <p className="mt-2 text-sm text-destructive">{result.error}</p>
+          <p className="mt-2 text-sm text-destructive">{guestsResult.error}</p>
         </div>
       </div>
     );
   }
 
-  return <GuestDashboard guests={result.guests} stats={result.stats} />;
+  if (!scheduleResult.success) {
+    return (
+      <div className="flex min-h-full flex-1 items-center justify-center bg-background px-4 py-16">
+        <div className="max-w-md rounded-xl border border-destructive/30 bg-card p-6 text-center shadow-sm">
+          <h1 className="text-lg font-semibold text-foreground">
+            Nie udało się pobrać harmonogramu
+          </h1>
+          <p className="mt-2 text-sm text-destructive">{scheduleResult.error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AdminPanel
+      guests={guestsResult.guests}
+      stats={guestsResult.stats}
+      expectedRsvpCount={guestsResult.expectedRsvpCount}
+      scheduleEvents={scheduleResult.events}
+    />
+  );
 }
