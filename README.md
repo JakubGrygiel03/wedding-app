@@ -20,7 +20,21 @@
 | **Panel administratora** | [/admin](https://wedding-app-seven-liart.vercel.app/admin) |
 | **Hasło demo (admin)** | `1234AJ` |
 
-> 🔐 Panel `/admin` jest chroniony hasłem. Użyj **`1234AJ`**, aby zobaczyć listę gości, statystyki RSVP i eksport CSV.
+> 🔐 Panel `/admin` jest chroniony hasłem. Użyj **`1234AJ`**, aby zobaczyć: zakładkę **RSVP** (lista gości, CRUD, sortowanie, statystyki, śledzenie postępu zaproszeń, eksport CSV) oraz zakładkę **Harmonogram** (CRUD planu dnia).
+
+---
+
+## 📄 Strona publiczna — co zobaczy gość
+
+| Sekcja | Opis |
+|---|---|
+| **Hero** | Zdjęcie tła z efektem vignette, imiona pary, data i godzina, **Hotel Trylogia** (Zielonka k. Warszawy), odliczanie do wesela (po ślubie — licznik „minęło” + zmiana copy) |
+| **Nasza Historia** | 5-krokowa scroll-driven timeline ze zdjęciami (**Framer Motion**) — narracja fantasy/wiedźmińska |
+| **Harmonogram** | Plan dnia z bazy `timeline_events` (fallback: dane statyczne), filtry (wszystkie / nadchodzące / minione), Google Calendar + `.ics` |
+| **RSVP** | Formularz z dietą (5 opcji + osobna dieta +1), noclegiem, wiadomością; edycja przez token w `localStorage`; numery kontaktowe pary młodej |
+| **Galeria** | Link do albumu fotografa po weselu (`NEXT_PUBLIC_GALLERY_URL`) — przed weselem przycisk nieaktywny |
+| **FAQ** | Termin RSVP, prezenty, dress code, parking, nocleg, diety, poprawiny/śniadanie, transport, zdjęcia |
+| **Stopka** | Imiona pary młodej |
 
 ---
 
@@ -48,10 +62,12 @@ Cyfrowe RSVP + panel admina daje:
 | Tradycyjnie | W aplikacji |
 |---|---|
 | Rozproszone odpowiedzi | Jeden formularz → PostgreSQL |
-| Ręczne zliczanie gości | Statystyki na żywo (obecni / odmowy / oczekujący) |
+| Ręczne zliczanie gości | Statystyki na żywo + śledzenie postępu względem liczby zaproszeń |
 | Chaos dietetyczny | Enum diet + osobna dieta dla +1 |
 | Eksport „na kolanie” | Pobranie CSV jednym kliknięciem |
 | Gość musi dzwonić | Formularz **lub** kontakt telefoniczny (numery w sekcji RSVP) |
+| Zmiany w planie dnia → developer | Edycja harmonogramu w panelu admina bez dotykania kodu |
+| Gość nie może edytować RSVP | Token w `localStorage` — powrót i aktualizacja bez duplikatu |
 
 **ROI organizacyjny:** para młoda oszczędza czas, catering dostaje ustrukturyzowane dane, gość ma frictionless UX na mobile.
 
@@ -61,33 +77,54 @@ Cyfrowe RSVP + panel admina daje:
 
 ### 📋 Cyfrowe RSVP
 - Interaktywny formularz (**React Hook Form + Zod**) z dynamicznymi polami (+1, dieta, nocleg).
+- **5 opcji dietetycznych:** Standardowa, Wegetariańska, Wegańska, Bezglutenowa, Bez laktozy — osobno dla gościa i +1.
 - Zapis przez **Next.js Server Actions** bezpośrednio do Supabase.
 - Walidacja po stronie klienta i serwera, toasty, animacja confetti po potwierdzeniu obecności.
+- **Persystencja tokena** (`localStorage`) — gość może wrócić i edytować swoją odpowiedź bez tworzenia duplikatu.
+- Przycisk **„Potwierdź inną osobę”** — nowe RSVP od zera.
 - Numery kontaktowe pary młodej (`tel:`) jako alternatywa dla formularza.
 
 ### ⏱️ Hero & Smart Countdown
-- Sekcja powitalna z parallax tłem, lokalizacją i odliczaniem do wesela.
-- **Automatyczne przełączenie po dacie ślubu** — teksty „przed” / „po weselu” + licznik w górę (elapsed time).
+- Sekcja powitalna ze zdjęciem tła, datą, lokalizacją (**Hotel Trylogia**) i odliczaniem do wesela.
+- **Automatyczne przełączenie po dacie ślubu** — teksty „Pobieramy się!” / „Jesteśmy małżeństwem!” + licznik w górę (elapsed time).
+- Link przewijający do harmonogramu (`#harmonogram`).
 
 ### 📖 Interaktywna Historia (Scroll Story)
-- Scroll-driven timeline (**Framer Motion**) z narracją i zoptymalizowanymi obrazami (`next/image` + blur placeholders).
+- **5 kroków** narracji pary młodej (LARP Velen → Szkocja → zaręczyny → zaproszenie).
+- Scroll-driven animacje (**Framer Motion**) z zoptymalizowanymi obrazami (`next/image` + blur placeholders).
 
 ### 📅 Harmonogram Dnia
-- Dynamiczny plan z tabeli `timeline_events` w Supabase (fallback do danych statycznych).
+- Dynamiczny plan z tabeli `timeline_events` w Supabase (fallback do danych statycznych w kodzie).
 - Integracja kalendarza: **Google Calendar** + pobieranie pliku **`.ics`**.
+- Filtrowanie wydarzeń (wszystkie / nadchodzące / minione) na stronie publicznej.
 
 ### 🖼️ Galeria Wspomnień
 - Sekcja informacyjna z linkiem do zewnętrznego albumu fotografa (`NEXT_PUBLIC_GALLERY_URL`).
 - Stan „przed weselem” (przycisk nieaktywny) / „po weselu” (aktywny link).
 
 ### ❓ FAQ
-- Accordion z najczęstszymi pytaniami (dress code, prezenty, parking, diety, zdjęcia).
+- Accordion z **9 pytaniami:** termin RSVP, prezenty, dress code (fantasy/elegancki), parking, nocleg, diety, poprawiny/śniadanie w niedzielę, transport, zdjęcia po weselu.
 
 ### 🛡️ Panel Administratora (`/admin`)
+
+Panel z dwiema zakładkami: **RSVP** i **Harmonogram**.
+
+#### Zakładka RSVP
 - Logowanie hasłem (sesja HTTP-only cookie, `timingSafeEqual`).
-- Dashboard: lista gości, statusy RSVP, podsumowanie diet, liczba +1 i noclegów.
-- **Eksport CSV** przez Route Handler (`/api/export-guests`).
-- Dostęp do danych przez Supabase **Service Role** (tylko serwer).
+- **Statystyki na żywo:** łączna liczba gości, potwierdzeni, odmowy, +1, noclegi, podsumowanie diet.
+- **Śledzenie postępu zaproszeń** — na dole zakładki ustawiasz oczekiwaną liczbę odpowiedzi; statystyki (w tym „Oczekujący”) aktualizują się **na żywo podczas wpisywania**, jeszcze przed zapisem.
+- **Lista gości** z sortowaniem po kolumnach (imię, obecność, dieta, +1, nocleg, wiadomość).
+- **CRUD gości:** przycisk „Dodaj gościa” obok listy, edycja w modalu, usuwanie z potwierdzeniem.
+- **Eksport CSV** przez Route Handler (`/api/export-guests`) — bez wiersza systemowego ustawień.
+
+#### Zakładka Harmonogram
+- **CRUD punktów programu** w tabeli `timeline_events`: dodawanie, edycja (modal), usuwanie.
+- Pola: godzina, tytuł, opis, kolejność (`order_index`).
+- Sortowanie wg kolejności i godziny; zmiany widoczne od razu na stronie głównej po zapisie.
+
+#### Bezpieczeństwo admina
+- Dostęp do mutacji przez Supabase **Service Role** (tylko serwer).
+- Panel oznaczony `noindex` — nie indeksowany przez wyszukiwarki.
 
 ### 📱 Mobile-First & Performance
 - Tailwind CSS, touch targets ≥ 44px, semantyczny HTML, ARIA.
@@ -114,7 +151,8 @@ Cyfrowe RSVP + panel admina daje:
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
 │  │ Server       │  │ Server       │  │ Route Handler     │  │
 │  │ Components   │  │ Actions      │  │ /api/export-guests│  │
-│  │ (RSC)        │  │ rsvp, admin  │  │                   │  │
+│  │ (RSC)        │  │ rsvp, admin, │  │                   │  │
+│  │              │  │ schedule     │  │                   │  │
 │  └──────┬───────┘  └──────┬───────┘  └─────────┬─────────┘  │
 │         │                 │                     │           │
 │         └─────────────────┼─────────────────────┘           │
@@ -160,9 +198,11 @@ Cyfrowe RSVP + panel admina daje:
 | `google_maps_url` | `text` | Link do mapy |
 | `order_index` | `int` | Kolejność wyświetlania |
 
-### Tabela `gallery_images` *(schema ready)*
+### Tabela `gallery_images` *(schema ready, nieużywana)*
 
 Przygotowana pod przyszłą integrację galerii w Supabase Storage. Obecnie sekcja galerii korzysta z zewnętrznego URL.
+
+> **Uwaga:** Oczekiwana liczba zaproszeń RSVP (panel admina) zapisywana jest jako ukryty wiersz systemowy w tabeli `guests` (token `__expected_rsvp_setting__`) — nie pojawia się na liście gości ani w eksporcie CSV.
 
 ### Row Level Security (RLS)
 
@@ -250,33 +290,63 @@ Panel admina: [http://localhost:3000/admin](http://localhost:3000/admin)
 ```
 src/
 ├── app/
-│   ├── page.tsx              # Landing page
-│   ├── admin/page.tsx        # Panel admina
-│   ├── actions/              # Server Actions (RSVP, admin)
-│   └── api/export-guests/    # Eksport CSV
+│   ├── page.tsx                    # Landing page (wszystkie sekcje publiczne)
+│   ├── admin/page.tsx              # Panel admina (RSVP + Harmonogram)
+│   ├── actions/
+│   │   ├── rsvp.ts                 # Server Actions — formularz RSVP
+│   │   ├── admin.ts                # Login, CRUD gości, oczekiwana liczba RSVP
+│   │   └── schedule.ts             # CRUD harmonogramu (admin)
+│   └── api/export-guests/          # Eksport CSV
 ├── components/
-│   ├── hero.tsx              # Hero + countdown
-│   ├── rsvp-form.tsx         # Formularz RSVP
-│   ├── schedule-section.tsx  # Harmonogram
-│   ├── interactive-story.tsx # Scroll story
-│   ├── faq.tsx               # FAQ
-│   └── admin/                # Dashboard, login
+│   ├── hero.tsx                    # Hero + countdown
+│   ├── interactive-story.tsx       # Scroll story
+│   ├── schedule-section.tsx        # Harmonogram (publiczny)
+│   ├── rsvp-form.tsx               # Formularz RSVP
+│   ├── photo-gallery-section.tsx   # Galeria (link zewnętrzny)
+│   ├── faq.tsx                     # FAQ
+│   └── admin/
+│       ├── admin-panel.tsx         # Zakładki RSVP / Harmonogram
+│       ├── guest-dashboard.tsx     # Lista gości, statystyki, sortowanie
+│       ├── admin-schedule-manager.tsx
+│       ├── schedule-event-dialog.tsx
+│       ├── schedule-delete-dialog.tsx
+│       ├── expected-rsvp-setting.tsx
+│       ├── guest-edit-dialog.tsx   # Dodawanie / edycja gościa
+│       └── guest-delete-dialog.tsx
 └── lib/
-    ├── supabase/             # Klienty Supabase
-    ├── validations/rsvp.ts   # Schemat Zod
-    └── wedding-config.ts     # Daty, kontakty, copy
+    ├── supabase/                   # Klienty Supabase (browser, server, admin)
+    ├── validations/                # Schematy Zod (rsvp, admin-guest, schedule)
+    ├── admin/                      # Auth, sort-guests, rsvp-progress, expected-rsvp-storage, export CSV
+    └── wedding-config.ts           # Daty, kontakty, copy
 ```
 
 ---
 
 ## 🔮 Roadmap (kierunek rozwoju)
 
-Funkcje zaplanowane w architekturze „Plan Maksimum”, nad którymi można kontynuować rozwój:
+Zrealizowane w obecnej wersji:
 
+**Strona publiczna**
+- [x] Hero z odliczaniem + tryb „po weselu” (elapsed time, zmiana copy)
+- [x] Interaktywna historia (5 kroków, Framer Motion)
+- [x] Harmonogram z Supabase + fallback statyczny, filtry, Google Calendar / `.ics`
+- [x] Formularz RSVP (diety, +1, nocleg, confetti, persystencja tokena)
+- [x] Galeria (link zewnętrzny, stan przed/po weselu)
+- [x] FAQ (9 pytań)
+
+**Panel admina**
+- [x] **Admin CRUD gości** — dodawanie, edycja, usuwanie, sortowanie listy
+- [x] **Admin CRUD harmonogramu** — zarządzanie `timeline_events` z panelu
+- [x] **Śledzenie postępu RSVP** — oczekiwana liczba zaproszeń vs. otrzymane odpowiedzi (live preview)
+- [x] Eksport CSV gości (bez wiersza systemowego)
+
+Planowane dalej:
 - [ ] **Live Photo Wall** — galeria na żywo (Supabase Realtime / polling) pod projektor
 - [ ] **Client-side compression** — optymalizacja zdjęć przed uploadem do Storage
 - [ ] **Tokenized RSVP links** — `/rsvp/[token]` dla spersonalizowanych zaproszeń
-- [ ] **Admin CRUD** — edycja harmonogramu i galerii z poziomu panelu
+- [ ] **Optymalizacja LCP** — kompresja hero do WebP (Lighthouse Performance 90+)
+- [ ] **SEO package** — OG image, sitemap, JSON-LD Event + FAQ
+- [ ] **Zaostrzenie RLS** — polityki `guests` zamiast `using (true)`
 
 ---
 
