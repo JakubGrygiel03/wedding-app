@@ -65,22 +65,22 @@ export function buildDefaultFaqItems(rsvpDeadline: string): FaqEntry[] {
         "Tak! W formularzu RSVP znajdziesz miejsce na wpisanie swoich preferencji dietetycznych lub alergii.",
     },
     {
+      id: "courses",
+      question: "Ile dań będzie?",
+      answer:
+        "Planujemy serwis trzech dań podczas kolacji (przystawka, danie główne i deser), a wieczorem tradycyjny wjazd tortu. Menu dopasujemy do preferencji dietetycznych zgłoszonych w formularzu RSVP.",
+    },
+    {
+      id: "end-time",
+      question: "Do której trwa wesele?",
+      answer:
+        "Przyjęcie zaplanowane jest do około 4:00 w nocy. Oczepiny rozpoczniemy około 23:30 — pełny plan dnia znajdziecie w harmonogramie na tej stronie.",
+    },
+    {
       id: "afterparty",
       question: "Czy planowane są poprawiny?",
       answer:
         "Nie planujemy tradycyjnych poprawin. Zapraszamy jednak gości nocujących w obiekcie na wspólne, leniwe śniadanie w niedzielny poranek.",
-    },
-    {
-      id: "transport",
-      question: "Jak wygląda kwestia powrotu w nocy bez noclegu?",
-      answer:
-        "Hotel Trylogia w Zielonce jest dobrze połączony z Warszawą i okolicami. Na miejscu bez problemu działają aplikacje taxi (Uber, Bolt, iTaxi).",
-    },
-    {
-      id: "photos",
-      question: "Jak wygląda kwestia zdjęć podczas ceremonii?",
-      answer:
-        "Prosimy o wyciszenie telefonów i nieużywanie aparatów podczas samej ceremonii, aby nasz fotograf mógł uchwycić te chwile. Na przyjęciu weselnym zachęcamy do robienia jak największej liczby zdjęć!",
     },
     {
       id: "photo-gallery",
