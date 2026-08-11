@@ -34,8 +34,8 @@ export const DEFAULT_STORY_STEPS: StoryStep[] = [
   {
     title: "Sojusz na Czas Wojny i Pokoju",
     text: "Z brutalnego świata gry szybko przenieśliśmy się do codzienności. Okazało się, że wspólnie potrafimy przetrwać każdą zamieć. Z przelotnego spojrzenia w mroku Velen wyrosła relacja pełna zaufania, wspólnych pasji, wyjazdów i niekończących się rozmów.",
-    imageSrc: "/story/step-1-velen.png",
-    imageAlt: "Para w strojach fantasy przy kamiennej bramie zamku",
+    imageSrc: "/story/step-1-sunset.png",
+    imageAlt: "Para w strojach fantasy na polu fioletowych kwiatów o zachodzie słońca",
   },
   {
     title: "Szkocki Przełom: Bach!",
@@ -91,8 +91,6 @@ function StoryText({
   index: number;
   align: "left" | "right";
 }) {
-  const stepNumber = String(index + 1).padStart(2, "0");
-
   return (
     <div
       className={cn(
@@ -100,9 +98,6 @@ function StoryText({
         align === "right" ? "lg:items-end lg:text-right" : "lg:items-start lg:text-left",
       )}
     >
-      <p className="mb-2 font-mono text-xs uppercase tracking-[0.35em] text-[#c9a227]/80">
-        Krok {stepNumber}
-      </p>
       <h3
         id={`story-step-${index}-title`}
         className="font-heading text-2xl font-semibold leading-tight text-[#f5f0e8] sm:text-3xl"
