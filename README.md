@@ -250,12 +250,42 @@ SUPABASE_SERVICE_ROLE_KEY=twoj_service_role_key
 # Admin panel
 ADMIN_PASSWORD=twoje_bezpieczne_haslo
 
+# Keep-alive (produkcja — zapobiega pauzowaniu darmowego Supabase)
+CRON_SECRET=losowy_dlugi_ciag_znakow
+
 # Opcjonalnie
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_GALLERY_URL=https://link-do-albumu-po-weselu.pl
 ```
 
 > ⚠️ **`SUPABASE_SERVICE_ROLE_KEY`** nigdy nie dodawaj z prefiksem `NEXT_PUBLIC_` — to klucz serwerowy z pełnymi uprawnieniami.
+
+### Keep-alive Supabase (Free tier)
+
+Darmowy Supabase pauzuje projekt po **~7 dniach bez aktywności bazy**. Aplikacja wysyła lekki ping co dzień:
+
+| Mechanizm | Harmonogram |
+|---|---|
+| **Vercel Cron** | codziennie o 07:00 UTC → `/api/keep-alive` |
+| **GitHub Actions** | poniedziałek i czwartek o 07:00 UTC (backup) |
+
+**Konfiguracja na Vercel** (Settings → Environment Variables):
+
+1. Po deployu **Vercel Cron działa automatycznie** (codziennie o 07:00 UTC) — nie wymaga dodatkowej konfiguracji.
+2. Opcjonalnie `CRON_SECRET` — ten sam secret ustaw też w GitHub Secrets, jeśli chcesz backup przez Actions.
+
+**Opcjonalnie GitHub** (Settings → Secrets → Actions):
+
+- `CRON_SECRET` — ten sam co na Vercel
+- `KEEP_ALIVE_URL` — `https://twoja-domena.vercel.app/api/keep-alive`
+
+Test ręczny (produkcja):
+
+```bash
+curl -H "Authorization: Bearer TWOJ_CRON_SECRET" https://twoja-domena.vercel.app/api/keep-alive
+```
+
+Odpowiedź `{"ok":true,...}` oznacza, że Supabase dostał zapytanie do bazy.
 
 ### 4. Migracja bazy (Supabase SQL Editor)
 
@@ -296,7 +326,9 @@ src/
 │   │   ├── rsvp.ts                 # Server Actions — formularz RSVP
 │   │   ├── admin.ts                # Login, CRUD gości, oczekiwana liczba RSVP
 │   │   └── schedule.ts             # CRUD harmonogramu (admin)
-│   └── api/export-guests/          # Eksport CSV
+│   └── api/
+│       ├── export-guests/          # Eksport CSV
+│       └── keep-alive/             # Ping Supabase (Vercel Cron)
 ├── components/
 │   ├── hero.tsx                    # Hero + countdown
 │   ├── interactive-story.tsx       # Scroll story
