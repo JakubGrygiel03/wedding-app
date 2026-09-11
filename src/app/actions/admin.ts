@@ -24,6 +24,7 @@ import {
   filterGuestRows,
   parseExpectedRsvpCount,
 } from "@/lib/admin/expected-rsvp-storage";
+import { parseCarSeats, serializeCarSeats } from "@/lib/car-seats";
 import { expectedRsvpCountSchema } from "@/lib/validations/admin-settings";
 
 export type AdminMutationResult =
@@ -72,8 +73,8 @@ function mapGuestRow(guest: {
   is_attending: boolean | null;
   dietary_requirements: string | null;
   plus_one: boolean | null;
+  plus_one_name: string | null;
   plus_one_diet: string | null;
-  available_car_seats: number | null;
   message: string | null;
   updated_at: string;
 }): AdminGuestRow {
@@ -84,7 +85,7 @@ function mapGuestRow(guest: {
     diet: guest.dietary_requirements,
     plusOne: guest.plus_one ?? false,
     plusOneDiet: guest.plus_one_diet,
-    availableCarSeats: guest.available_car_seats ?? 0,
+    availableCarSeats: parseCarSeats(guest.plus_one_name),
     message: guest.message,
     updatedAt: guest.updated_at,
   };
@@ -207,7 +208,7 @@ export async function getAdminGuests(): Promise<AdminGuestsResult> {
     const { data, error } = await supabase
       .from("guests")
       .select(
-        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_diet, available_car_seats, message, updated_at",
+        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_name, plus_one_diet, message, updated_at",
       )
       .order("updated_at", { ascending: false });
 
@@ -245,11 +246,11 @@ function mapAdminGuestPayload(data: AdminGuestFormValues) {
     guest_name: data.guestName,
     is_attending: data.isAttending,
     plus_one: isAttending ? data.plusOne : false,
+    plus_one_name: isAttending ? serializeCarSeats(data.availableCarSeats) : "0",
     plus_one_diet:
       isAttending && data.plusOne ? (data.plusOneDiet ?? null) : null,
     dietary_requirements: isAttending ? (data.diet ?? null) : null,
     accommodation_needed: false,
-    available_car_seats: isAttending ? data.availableCarSeats : 0,
     message: data.message?.trim() || null,
     updated_at: new Date().toISOString(),
   };

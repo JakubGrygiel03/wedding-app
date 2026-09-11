@@ -9,6 +9,7 @@ import {
   getSupabaseEnvErrorMessage,
   SupabaseEnvError,
 } from "@/lib/supabase/env";
+import { parseCarSeats, serializeCarSeats } from "@/lib/car-seats";
 import {
   rsvpSchema,
   type RsvpFormValues,
@@ -48,8 +49,8 @@ function mapSupabaseError(error: PostgrestError | Error): string {
       return "Tabela guests nie istnieje w Supabase. Uruchom migrację SQL.";
     }
 
-    if (error.code === "42703") {
-      return "Brak kolumny available_car_seats w tabeli guests. Uruchom nową migrację SQL w Supabase.";
+    if (error.code === "PGRST204" || error.code === "42703") {
+      return "Baza nie rozpoznaje jednego z pól formularza. Odśwież stronę i spróbuj ponownie.";
     }
 
     if (error.code === "PGRST301" || error.code === "42501") {
@@ -75,9 +76,9 @@ function mapGuestToFormValues(guest: {
   guest_name: string;
   is_attending: boolean | null;
   plus_one: boolean | null;
+  plus_one_name: string | null;
   plus_one_diet: string | null;
   dietary_requirements: string | null;
-  available_car_seats: number | null;
   message: string | null;
 }): GuestRsvpData {
   return {
@@ -86,7 +87,7 @@ function mapGuestToFormValues(guest: {
     plusOne: guest.plus_one ?? false,
     plusOneDiet: guest.plus_one_diet,
     diet: guest.dietary_requirements,
-    availableCarSeats: guest.available_car_seats ?? 0,
+    availableCarSeats: parseCarSeats(guest.plus_one_name),
     message: guest.message,
   };
 }
@@ -101,7 +102,7 @@ export async function getGuestByToken(
     const { data, error } = await supabase
       .from("guests")
       .select(
-        "guest_name, is_attending, plus_one, plus_one_diet, dietary_requirements, available_car_seats, message",
+        "guest_name, is_attending, plus_one, plus_one_name, plus_one_diet, dietary_requirements, message",
       )
       .eq("token", token)
       .maybeSingle();
@@ -162,12 +163,11 @@ export async function submitRsvp(
     guest_name: data.guestName,
     is_attending: data.isAttending,
     plus_one: data.isAttending ? data.plusOne : false,
-    plus_one_name: null,
+    plus_one_name: data.isAttending ? serializeCarSeats(data.availableCarSeats) : "0",
     plus_one_diet:
       data.isAttending && data.plusOne ? data.plusOneDiet ?? null : null,
     dietary_requirements: data.isAttending ? data.diet : null,
     accommodation_needed: false,
-    available_car_seats: data.isAttending ? data.availableCarSeats : 0,
     message: data.message?.trim() || null,
     updated_at: new Date().toISOString(),
   };

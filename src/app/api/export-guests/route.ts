@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
 import { filterGuestRows } from "@/lib/admin/expected-rsvp-storage";
 import { guestsToCsv } from "@/lib/admin/export-guests";
+import { parseCarSeats } from "@/lib/car-seats";
 import type { AdminGuestRow } from "@/app/actions/admin";
 
 export async function GET() {
@@ -16,7 +17,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("guests")
       .select(
-        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_diet, available_car_seats, message, updated_at",
+        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_name, plus_one_diet, message, updated_at",
       )
       .order("updated_at", { ascending: false });
 
@@ -32,7 +33,7 @@ export async function GET() {
       diet: guest.dietary_requirements,
       plusOne: guest.plus_one ?? false,
       plusOneDiet: guest.plus_one_diet,
-      availableCarSeats: guest.available_car_seats ?? 0,
+      availableCarSeats: parseCarSeats(guest.plus_one_name),
       message: guest.message,
       updatedAt: guest.updated_at,
     }));
