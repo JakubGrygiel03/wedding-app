@@ -26,7 +26,7 @@ export function guestsToCsv(guests: AdminGuestRow[]): string {
     "Dieta",
     "+1",
     "Dieta +1",
-    "Nocleg",
+    "Miejsca w aucie",
     "Wiadomość",
     "Zaktualizowano",
   ];
@@ -38,7 +38,7 @@ export function guestsToCsv(guests: AdminGuestRow[]): string {
       guest.diet ?? "",
       formatBoolean(guest.plusOne),
       guest.plusOneDiet ?? "",
-      formatBoolean(guest.accommodationNeeded),
+      String(guest.availableCarSeats),
       guest.message ?? "",
       guest.updatedAt,
     ]

@@ -31,20 +31,14 @@ export function buildDefaultFaqItems(rsvpDeadline: string): FaqEntry[] {
   return [
     {
       id: "rsvp-deadline",
-      question: "Do kiedy należy potwierdzić przybycie?",
-      answer: `Prosimy o potwierdzenie obecności (RSVP) do ${rsvpDeadline} za pomocą formularza na tej stronie lub kontaktując się z nami osobiście.`,
+      question: "Do kiedy należy potwierdzić obecność?",
+      answer: `Prosimy o potwierdzenie obecności do ${rsvpDeadline} za pomocą formularza na tej stronie lub kontaktując się z nami osobiście.`,
     },
     {
       id: "gifts",
       question: "Co z prezentami? Co wolelibyście otrzymać?",
       answer:
-        "Największym prezentem jest dla nas Wasza obecność! Jeśli jednak chcielibyście nas obdarować, najbardziej ucieszą nas koperty, które pomogą nam zrealizować nasze wspólne marzenia, lub dobra książka z Waszą dedykacją zamiast kwiatów.",
-    },
-    {
-      id: "dress-code",
-      question: "Jaki obowiązuje dress code?",
-      answer:
-        "Obowiązuje strój wieczorowy / elegancki. Ponieważ czerpiemy inspiracje z klimatu fantasy i wiedźmińskich opowieści, subtelne akcenty w kolorach ziemi, głębokiej zieleni, złota czy ciemnej elegancji będą mile widziane!",
+        "Największym prezentem jest dla nas Wasza obecność! Jeśli jednak chcielibyście nas obdarować, najbardziej ucieszą nas koperty, które pomogą nam zrealizować nasze wspólne marzenia zamiast kwiatów czy trunków.",
     },
     {
       id: "parking",
@@ -54,33 +48,31 @@ export function buildDefaultFaqItems(rsvpDeadline: string): FaqEntry[] {
     },
     {
       id: "accommodation",
-      question: "Czy zapewniony jest nocleg?",
+      question: "Czy zapewniamy nocleg?",
       answer:
-        "Zapewniamy nocleg dla gości przyjezdnych w Hotelu Trylogia. Podczas wypełniania formularza RSVP na tej stronie prosimy o zaznaczenie zapotrzebowania na nocleg.",
+        "Nie zapewniamy noclegu, ale jest możliwość wynajęcia pokoju w Hotelu Trylogia lub w okolicy.",
     },
     {
       id: "dietary",
       question: "Czy na weselu będą uwzględnione opcje dietetyczne?",
       answer:
-        "Tak! W formularzu RSVP znajdziesz miejsce na wpisanie swoich preferencji dietetycznych lub alergii.",
-    },
-    {
-      id: "courses",
-      question: "Ile dań będzie?",
-      answer:
-        "Planujemy serwis trzech dań podczas kolacji (przystawka, danie główne i deser), a wieczorem tradycyjny wjazd tortu. Menu dopasujemy do preferencji dietetycznych zgłoszonych w formularzu RSVP.",
+        "Tak! W formularzu uczestnictwa znajdziesz miejsce na wpisanie swoich preferencji dietetycznych lub alergii.",
     },
     {
       id: "end-time",
       question: "Do której trwa wesele?",
-      answer:
-        "Przyjęcie zaplanowane jest do około 4:00 w nocy. Oczepiny rozpoczniemy około 23:30 — pełny plan dnia znajdziecie w harmonogramie na tej stronie.",
+      answer: "Wesele planujemy do 3.30 w nocy.",
     },
     {
       id: "afterparty",
       question: "Czy planowane są poprawiny?",
       answer:
-        "Nie planujemy tradycyjnych poprawin. Zapraszamy jednak gości nocujących w obiekcie na wspólne, leniwe śniadanie w niedzielny poranek.",
+        "Nie planujemy tradycyjnych poprawin, ale mamy nadzieję spotkać się z gośćmi nocującymi w Hotelu Trylogia na wspólnym śniadaniu w niedzielny poranek!",
+    },
+    {
+      id: "church-distance",
+      question: "Jak daleko jest z kościoła na salę?",
+      answer: "Z kościoła na salę weselną jest około 12 minut samochodem.",
     },
     {
       id: "photo-gallery",

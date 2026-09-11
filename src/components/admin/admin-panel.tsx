@@ -9,6 +9,7 @@ import { AdminScheduleManager } from "@/components/admin/admin-schedule-manager"
 import { GuestDashboard } from "@/components/admin/guest-dashboard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SHOW_SCHEDULE } from "@/lib/wedding-config";
 
 export function AdminPanel({
   guests,
@@ -27,6 +28,16 @@ export function AdminPanel({
     startTransition(async () => {
       await logoutAdmin();
     });
+  }
+
+  if (!SHOW_SCHEDULE) {
+    return (
+      <GuestDashboard
+        guests={guests}
+        stats={stats}
+        expectedRsvpCount={expectedRsvpCount}
+      />
+    );
   }
 
   return (

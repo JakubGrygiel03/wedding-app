@@ -12,7 +12,11 @@ export const adminGuestSchema = z
     plusOne: z.boolean(),
     plusOneDiet: z.enum(DIET_OPTIONS).optional(),
     diet: z.enum(DIET_OPTIONS).optional().nullable(),
-    accommodationNeeded: z.boolean(),
+    availableCarSeats: z
+      .number({ message: "Podaj liczbę wolnych miejsc w aucie." })
+      .int("Podaj liczbę całkowitą.")
+      .min(0, "Liczba miejsc nie może być ujemna.")
+      .max(9, "Podaj liczbę miejsc od 0 do 9."),
     message: z
       .string()
       .trim()
@@ -47,6 +51,6 @@ export const adminGuestDefaultValues: AdminGuestFormValues = {
   plusOne: false,
   plusOneDiet: undefined,
   diet: "Standardowa",
-  accommodationNeeded: false,
+  availableCarSeats: 0,
   message: "",
 };

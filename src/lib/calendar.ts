@@ -111,8 +111,9 @@ export function downloadIcsFile(
 export const DEFAULT_WEDDING_CALENDAR_EVENT: WeddingCalendarEvent = {
   title: "Ślub i Wesele Adrianny i Jana",
   description:
-    "Zapraszamy na ślub i wesele Adrianny i Jana. Szczegóły harmonogramu znajdziesz na stronie zaproszenia.",
-  location: "Hotel Trylogia, ul. Poniatowskiego 46/46A, 05-220 Zielonka",
+    "Ślub o 16:00 w Kościele pw. Matki Bożej Częstochowskiej w Wołominie (ul. Kościelna 54). Wesele od 17:30 w Hotelu Trylogia.",
+  location:
+    "Kościół pw. Matki Bożej Częstochowskiej, ul. Kościelna 54, Wołomin",
   start: "2027-01-16T16:00:00",
-  end: "2027-01-17T02:00:00",
+  end: "2027-01-17T03:30:00",
 };

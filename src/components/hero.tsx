@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { CalendarHeart, ChevronDown, MapPin } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
+import { HeroDetailsCard } from "@/components/hero-details";
 import { cn } from "@/lib/utils";
 import { weddingTheme } from "@/lib/wedding-theme";
 
@@ -13,9 +14,6 @@ const HERO_BLUR =
 
 export interface HeroProps {
   weddingDate: string;
-  locationName: string;
-  locationCity: string;
-  locationAddress: string;
   brideName?: string;
   groomName?: string;
   backgroundImageSrc?: string;
@@ -49,31 +47,13 @@ function getCountdownValues(target: Date, now: Date): CountdownValues {
   };
 }
 
-function formatWeddingDate(date: Date): string {
-  const weekday = new Intl.DateTimeFormat("pl-PL", {
-    weekday: "long",
-  }).format(date);
-  const day = new Intl.DateTimeFormat("pl-PL", { day: "numeric" }).format(date);
-  const month = new Intl.DateTimeFormat("pl-PL", { month: "long" })
-    .format(date)
-    .toLowerCase();
-  const year = new Intl.DateTimeFormat("pl-PL", { year: "numeric" }).format(date);
-  const time = new Intl.DateTimeFormat("pl-PL", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-
-  return `${weekday}, ${day} ${month} ${year}, godz. ${time}`;
-}
-
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
-    <div className="flex min-w-[4.5rem] flex-col items-center rounded-2xl border border-primary/15 bg-card/90 px-3 py-4 shadow-sm backdrop-blur-sm sm:min-w-[5.5rem] sm:px-4 sm:py-5">
-      <span className="font-mono text-2xl font-semibold tabular-nums text-foreground sm:text-3xl">
+    <div className="flex min-w-[3.75rem] flex-col items-center rounded-xl border border-primary/15 bg-card/90 px-2.5 py-2.5 shadow-sm backdrop-blur-sm sm:min-w-[5rem] sm:rounded-2xl sm:px-4 sm:py-3.5">
+      <span className="font-mono text-xl font-semibold tabular-nums text-foreground sm:text-3xl">
         {value >= 100 ? String(value) : String(value).padStart(2, "0")}
       </span>
-      <span className="mt-1 text-xs uppercase tracking-wider text-primary/80 sm:text-sm">
+      <span className="mt-0.5 text-[0.65rem] uppercase tracking-wider text-primary/80 sm:text-sm">
         {label}
       </span>
     </div>
@@ -82,9 +62,6 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
 
 export function Hero({
   weddingDate,
-  locationName,
-  locationCity,
-  locationAddress,
   brideName = "Adrianna",
   groomName = "Jan",
   backgroundImageSrc = "/hero-loch-hourn.jpg",
@@ -103,12 +80,11 @@ export function Hero({
     ? getCountdownValues(targetDate, now)
     : { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false };
   const isPastWedding = countdown.isPast;
-  const formattedDate = formatWeddingDate(targetDate);
 
   return (
     <section
       className={cn(
-        "relative min-h-[min(100vh,920px)] overflow-hidden px-4 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28",
+        "relative flex h-svh flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-6",
         className,
       )}
       aria-labelledby="hero-heading"
@@ -154,12 +130,12 @@ export function Hero({
         aria-hidden
       />
 
-      <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
+      <div className="relative z-10 mx-auto flex h-full max-w-4xl flex-col items-center justify-center text-center">
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-4 text-sm font-medium uppercase tracking-[0.25em] text-wedding-accent drop-shadow-[0_1px_8px_rgba(250,249,246,0.95)] sm:text-base"
+          className="mb-2 text-sm font-medium uppercase tracking-[0.25em] text-wedding-accent drop-shadow-[0_1px_8px_rgba(250,249,246,0.95)] sm:mb-3 sm:text-base"
         >
           {isPastWedding ? "Jesteśmy małżeństwem!" : "Pobieramy się!"}
         </motion.p>
@@ -169,7 +145,7 @@ export function Hero({
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          className="font-heading text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl"
+          className="font-heading text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl"
         >
           {brideName}
           <span className="mx-3 font-light text-wedding-accent">&</span>
@@ -180,7 +156,7 @@ export function Hero({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-5 max-w-2xl text-base leading-relaxed text-foreground/70 sm:text-lg"
+          className="mt-2 max-w-2xl text-sm leading-relaxed text-foreground/70 sm:mt-4 sm:text-lg"
         >
           {isPastWedding
             ? "Dziękujemy, że byliście z nami w tym wyjątkowym dniu pełnym miłości i radości."
@@ -191,48 +167,23 @@ export function Hero({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 flex w-full max-w-xl flex-col gap-4 rounded-2xl border border-primary/15 bg-card/80 p-5 shadow-sm backdrop-blur-sm sm:p-6"
+          className="flex w-full justify-center"
         >
-          <div className="flex items-start gap-3 text-left">
-            <CalendarHeart
-              className="mt-0.5 size-5 shrink-0 text-primary"
-              aria-hidden
-            />
-            <div>
-              <p className="text-sm font-medium uppercase tracking-wide text-primary">
-                Data i godzina
-              </p>
-              <p className="mt-1 text-foreground">{formattedDate}</p>
-            </div>
-          </div>
-
-          <div className="h-px bg-primary/10" aria-hidden />
-
-          <div className="flex items-start gap-3 text-left">
-            <MapPin className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-            <div>
-              <p className="text-sm font-medium uppercase tracking-wide text-primary">
-                Miejsce
-              </p>
-              <p className="mt-1 font-medium text-foreground">{locationName}</p>
-              <p className="text-foreground/70">{locationCity}</p>
-              <p className="text-sm text-foreground/60">{locationAddress}</p>
-            </div>
-          </div>
+          <HeroDetailsCard />
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-10 w-full"
+          className="mt-4 w-full sm:mt-6"
         >
-          <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-primary">
+          <p className="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-primary sm:mb-3">
             {isPastWedding ? "Od wesela minęło:" : "Do wesela pozostało:"}
           </p>
 
           <div
-            className="flex flex-wrap justify-center gap-3 sm:gap-4"
+            className="flex flex-wrap justify-center gap-2 sm:gap-4"
             role="timer"
             aria-live="polite"
             aria-label={
@@ -249,17 +200,17 @@ export function Hero({
         </motion.div>
 
         <motion.a
-          href="#harmonogram"
+          href="#nasza-historia"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          className="mt-12 inline-flex min-h-11 min-w-11 flex-col items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wedding-accent/60"
-          aria-label="Przewiń do harmonogramu wesela"
+          className="mt-4 inline-flex min-h-11 min-w-11 flex-col items-center gap-1 text-sm font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-wedding-accent/60 sm:mt-6"
+          aria-label="Przewiń do naszej historii"
         >
           <span
             className="[text-shadow:0_0_2px_#faf9f6,0_0_8px_rgba(250,249,246,0.98),0_0_14px_rgba(250,249,246,0.82),0_0_24px_rgba(250,249,246,0.55)]"
           >
-            Harmonogram dnia
+            Nasza historia
           </span>
           <motion.span
             animate={{ y: [0, 6, 0] }}

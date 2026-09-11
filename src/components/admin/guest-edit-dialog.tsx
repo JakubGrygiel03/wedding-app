@@ -53,7 +53,7 @@ function guestToFormValues(guest: AdminGuestRow): AdminGuestFormValues {
       ? toDietOption(guest.plusOneDiet)
       : undefined,
     diet: guest.diet ? toDietOption(guest.diet) : "Standardowa",
-    accommodationNeeded: guest.accommodationNeeded,
+    availableCarSeats: guest.availableCarSeats,
     message: guest.message ?? "",
   };
 }
@@ -158,7 +158,7 @@ export function GuestEditDialog({
     if (isAttending !== true) {
       form.setValue("plusOne", false);
       form.setValue("plusOneDiet", undefined);
-      form.setValue("accommodationNeeded", false);
+      form.setValue("availableCarSeats", 0);
     }
   }, [isAttending, form]);
 
@@ -329,21 +329,20 @@ export function GuestEditDialog({
                 </div>
               ) : null}
 
-              <div className="flex items-center gap-3">
-                <Controller
-                  control={control}
-                  name="accommodationNeeded"
-                  render={({ field }) => (
-                    <Checkbox
-                      id="guest-edit-accommodation"
-                      checked={field.value}
-                      onCheckedChange={(checked) =>
-                        field.onChange(checked === true)
-                      }
-                    />
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="guest-edit-car-seats">
+                  Wolne miejsca w aucie (kościół → sala)
+                </Label>
+                <Input
+                  id="guest-edit-car-seats"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={9}
+                  aria-invalid={Boolean(errors.availableCarSeats)}
+                  {...register("availableCarSeats", { valueAsNumber: true })}
                 />
-                <Label htmlFor="guest-edit-accommodation">Potrzebny nocleg</Label>
+                <FieldError message={errors.availableCarSeats?.message} />
               </div>
             </>
           ) : null}

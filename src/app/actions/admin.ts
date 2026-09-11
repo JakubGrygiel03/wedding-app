@@ -41,7 +41,7 @@ export type AdminGuestRow = {
   diet: string | null;
   plusOne: boolean;
   plusOneDiet: string | null;
-  accommodationNeeded: boolean;
+  availableCarSeats: number;
   message: string | null;
   updatedAt: string;
 };
@@ -54,7 +54,7 @@ export type AdminStats = {
   respondedCount: number;
   dietCounts: Record<string, number>;
   plusOneCount: number;
-  accommodationCount: number;
+  carSeatsCount: number;
 };
 
 export type AdminGuestsResult =
@@ -73,7 +73,7 @@ function mapGuestRow(guest: {
   dietary_requirements: string | null;
   plus_one: boolean | null;
   plus_one_diet: string | null;
-  accommodation_needed: boolean | null;
+  available_car_seats: number | null;
   message: string | null;
   updated_at: string;
 }): AdminGuestRow {
@@ -84,7 +84,7 @@ function mapGuestRow(guest: {
     diet: guest.dietary_requirements,
     plusOne: guest.plus_one ?? false,
     plusOneDiet: guest.plus_one_diet,
-    accommodationNeeded: guest.accommodation_needed ?? false,
+    availableCarSeats: guest.available_car_seats ?? 0,
     message: guest.message,
     updatedAt: guest.updated_at,
   };
@@ -102,7 +102,7 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
   let pendingCount = 0;
   let respondedCount = 0;
   let plusOneCount = 0;
-  let accommodationCount = 0;
+  let carSeatsCount = 0;
 
   for (const guest of guests) {
     const headcount = getGuestHeadcount(guest);
@@ -128,7 +128,9 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
     }
 
     if (guest.plusOne) plusOneCount += 1;
-    if (guest.accommodationNeeded) accommodationCount += 1;
+    if (guest.isAttending === true) {
+      carSeatsCount += guest.availableCarSeats;
+    }
   }
 
   return {
@@ -139,7 +141,7 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
     respondedCount,
     dietCounts,
     plusOneCount,
-    accommodationCount,
+    carSeatsCount,
   };
 }
 
@@ -205,7 +207,7 @@ export async function getAdminGuests(): Promise<AdminGuestsResult> {
     const { data, error } = await supabase
       .from("guests")
       .select(
-        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_diet, accommodation_needed, message, updated_at",
+        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_diet, available_car_seats, message, updated_at",
       )
       .order("updated_at", { ascending: false });
 
@@ -246,7 +248,8 @@ function mapAdminGuestPayload(data: AdminGuestFormValues) {
     plus_one_diet:
       isAttending && data.plusOne ? (data.plusOneDiet ?? null) : null,
     dietary_requirements: isAttending ? (data.diet ?? null) : null,
-    accommodation_needed: isAttending ? data.accommodationNeeded : false,
+    accommodation_needed: false,
+    available_car_seats: isAttending ? data.availableCarSeats : 0,
     message: data.message?.trim() || null,
     updated_at: new Date().toISOString(),
   };

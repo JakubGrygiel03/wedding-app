@@ -3,6 +3,7 @@ import { AdminPanel } from "@/components/admin/admin-panel";
 import { getAdminGuests } from "@/app/actions/admin";
 import { getAdminScheduleEvents } from "@/app/actions/schedule";
 import { isAdminAuthenticated } from "@/lib/admin/auth";
+import { SHOW_SCHEDULE } from "@/lib/wedding-config";
 
 export const metadata = {
   title: "Admin | Wedding App",
@@ -16,10 +17,7 @@ export default async function AdminPage() {
     return <AdminLoginForm />;
   }
 
-  const [guestsResult, scheduleResult] = await Promise.all([
-    getAdminGuests(),
-    getAdminScheduleEvents(),
-  ]);
+  const guestsResult = await getAdminGuests();
 
   if (!guestsResult.success) {
     return (
@@ -34,7 +32,9 @@ export default async function AdminPage() {
     );
   }
 
-  if (!scheduleResult.success) {
+  const scheduleResult = SHOW_SCHEDULE ? await getAdminScheduleEvents() : null;
+
+  if (scheduleResult && !scheduleResult.success) {
     return (
       <div className="flex min-h-full flex-1 items-center justify-center bg-background px-4 py-16">
         <div className="max-w-md rounded-xl border border-destructive/30 bg-card p-6 text-center shadow-sm">
@@ -52,7 +52,7 @@ export default async function AdminPage() {
       guests={guestsResult.guests}
       stats={guestsResult.stats}
       expectedRsvpCount={guestsResult.expectedRsvpCount}
-      scheduleEvents={scheduleResult.events}
+      scheduleEvents={scheduleResult?.events ?? []}
     />
   );
 }

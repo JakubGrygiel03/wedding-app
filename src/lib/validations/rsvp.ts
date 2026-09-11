@@ -24,7 +24,11 @@ export const rsvpSchema = z
     diet: z.enum(DIET_OPTIONS, {
       message: "Wybierz preferencje dietetyczne.",
     }),
-    accommodationNeeded: z.boolean(),
+    availableCarSeats: z
+      .number({ message: "Podaj liczbę wolnych miejsc w aucie." })
+      .int("Podaj liczbę całkowitą.")
+      .min(0, "Liczba miejsc nie może być ujemna.")
+      .max(9, "Podaj liczbę miejsc od 0 do 9."),
     message: z
       .string()
       .trim()
@@ -49,6 +53,6 @@ export const rsvpDefaultValues: RsvpFormValues = {
   plusOne: false,
   plusOneDiet: undefined,
   diet: "Standardowa",
-  accommodationNeeded: false,
+  availableCarSeats: 0,
   message: "",
 };

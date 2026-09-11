@@ -26,34 +26,36 @@ const STORY_BLUR =
 
 export const DEFAULT_STORY_STEPS: StoryStep[] = [
   {
-    title: "Spotkanie w Mroku Velen",
-    text: "To nie była słodka bajka. Poznaliśmy się na larpie 'Tajemnice Velen' – w brutalnym, pełnym napięcia i intryg świecie wiedźmińskiego pogranicza. Wśród błota, szczęku stali, niepewności i mrocznych tajemnic, nasze ścieżki skrzyżowały się po raz pierwszy. Wtedy w tym chaosie narodził się sojusz, który miał przetrwać wszystko.",
-    imageSrc: "/story/step-1-sunset.png",
-    imageAlt: "Para w strojach fantasy na polu fioletowych kwiatów o zachodzie słońca",
+    title: "Spotkanie w świecie Wiedźmina",
+    text: "Nasze szlaki skrzyżowały się po raz pierwszy na larpie (improwizowanej grze aktorskiej) — pełnym przygód, tajemnic i zaklęć. Żaden wątek scenariusza nie pchnął nas ku sobie specjalnie, to my sami nawiązaliśmy nić porozumienia zamieniając najpierw kilka słów, a potem kilka zdań, by w końcu zacząć rozumieć, że to nie było przypadkowe spotkanie. Gdy żegnaliśmy się po grze, nie wiedzieliśmy jeszcze, że losy naszego przeznaczenia splotły się nierozerwalnie.",
+    imageSrc: "/story/erk-1536.jpg",
+    imageAlt:
+      "Adrianna i Jan w strojach historycznych przy ognisku — pierwsze spotkanie na larpie",
   },
   {
-    title: "Sojusz na Czas Wojny i Pokoju",
-    text: "Z brutalnego świata gry szybko przenieśliśmy się do codzienności. Okazało się, że wspólnie potrafimy przetrwać każdą zamieć. Z przelotnego spojrzenia w mroku Velen wyrosła relacja pełna zaufania, wspólnych pasji, wyjazdów i niekończących się rozmów.",
-    imageSrc: "/story/step-1-sunset.png",
-    imageAlt: "Para w strojach fantasy na polu fioletowych kwiatów o zachodzie słońca",
+    title: "Bratnie dusze",
+    text: "Z każdą rozmową i każdym dniem znajdowaliśmy rzeczy, które nas łączą. Nasze temperamenty zgrały się w piękny duet, a nasze wspólne zainteresowania i pasje sprawiały, że nie odstępowaliśmy się ani na krok. Rozumieliśmy się coraz lepiej, nawet bez słów, a pomysły w naszych głowach często pojawiały się w tym samym czasie! Wiecie jak to jest czytać komuś w myślach? Bo my tak!",
+    imageSrc: "/story/rekografia-0324.jpg",
+    imageAlt:
+      "Adrianna i Jan w strojach historycznych na łące — bratnie dusze",
   },
   {
-    title: "Szkocki Przełom: Bach!",
-    text: "Majestatyczna, surowa, spowita mgłą... Szkocja. Wyjazd w klimacie niczym z serialu Outlander – pośród starożytnych ruin i wiatru smagającego wzgórza. I nagle… BACH! W tym niesamowitym miejscu, pośród milczących kamieni, Jan uklęknął. Napięcie opadło, ustępując miejsca czystej radości.",
+    title: "Szkocka podróż",
+    text: "Majestatyczna, surowa, ale i skąpana w pięknym zachodzącym słońcu Szkocja. Była to wyprawa pośród wzgórz smaganych jesiennym wiatrem i ruin dawnych zamków. W tym niesamowitym miejscu, pośród milczących kamieni pokrytych bluszczem i mchem oraz opadających pomarańczowych liści, Jan uklęknął, a wzruszona Adrianna powiedziała z radością TAK!",
     imageSrc: "/story/step-3-proposal.png",
     imageAlt: "Oświadczyny na tle szkockiego zamku",
   },
   {
-    title: "Artefakt Przeznaczenia",
-    text: "Zamiast wiedźmińskiego medalionu czy magicznego glifu – na palcu pojawił się ten jedyny, wyjątkowy pierścionek. Nasza opowieść oficjalnie weszła w najważniejszy jak dotąd rozdział.",
+    title: "Magiczny artefakt",
+    text: "Aby przypieczętować tę obietnicę, na palcu pojawił się ten jedyny, wyjątkowy pierścionek. Nasza opowieść oficjalnie weszła w najważniejszy jak dotąd rozdział.",
     imageSrc: "/story/step-4-ring.png",
-    imageAlt: "Zielony pierścionek zaręczynowy zakładany na palec",
+    imageAlt: "Pierścionek zaręczynowy zakładany na palec",
   },
   {
-    title: "Witajcie w Naszej Weselnej Wiosce",
-    text: "16 Stycznia 2027 roku zbieramy naszą własną drużynę! Zapraszamy Was do naszej klimatycznej wioski, by uczcić ten dzień tak, jak zaczęliśmy – z charakterem, wspaniałymi ludźmi i dobrą zabawą do białego rana.",
+    title: "Witajcie na naszych zaślubinach!",
+    text: "16 Stycznia 2027 roku zbieramy wszystkich poszukiwaczy przygód, by świętowali razem z nami! Zapraszamy Was we wspólną podróż w klimatach dzielnych rycerzy i szlachetnych dam dworu, królewskich zamków i hucznych biesiad! Uczcijcie z nami ten dzień dobrą zabawą do białego rana!",
     imageSrc: "/story/step-5-village.png",
-    imageAlt: "Para w strojach fantasy — zaproszenie na wesele",
+    imageAlt: "Zaproszenie na zaślubiny Adrianny i Jana",
   },
 ];
 
@@ -191,7 +193,7 @@ function StoryTimelineStep({
 export function InteractiveStory({
   steps = DEFAULT_STORY_STEPS,
   title = "Nasza Historia",
-  subtitle = "Od mroku Velen po weselną wioskę — pięć rozdziałów naszej opowieści.",
+  subtitle = "Od poznania się do wesela",
   className,
 }: InteractiveStoryProps) {
   const headerRef = useRef<HTMLDivElement>(null);

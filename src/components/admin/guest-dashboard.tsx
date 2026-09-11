@@ -5,7 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  BedDouble,
+  Car,
   Download,
   LogOut,
   Pencil,
@@ -232,7 +232,7 @@ export function GuestDashboard({
               Odpowiedzi RSVP
             </h1>
             <p className="mt-2 text-sm text-foreground/65">
-              Podsumowanie gości, preferencji dietetycznych i noclegów.
+              Podsumowanie gości, preferencji dietetycznych i miejsc w autach.
             </p>
           </div>
 
@@ -288,9 +288,9 @@ export function GuestDashboard({
             icon={Users}
           />
           <StatCard
-            title="Noclegi"
-            value={stats.accommodationCount}
-            icon={BedDouble}
+            title="Miejsca w autach"
+            value={stats.carSeatsCount}
+            icon={Car}
           />
         </section>
 
@@ -392,8 +392,8 @@ export function GuestDashboard({
                     onSort={handleSort}
                   />
                   <SortableTableHead
-                    column="accommodationNeeded"
-                    label="Nocleg"
+                    column="availableCarSeats"
+                    label="Miejsca w aucie"
                     sort={sort}
                     onSort={handleSort}
                   />
@@ -429,7 +429,7 @@ export function GuestDashboard({
                       <TableCell>{guest.diet ?? "—"}</TableCell>
                       <TableCell>{formatBoolean(guest.plusOne)}</TableCell>
                       <TableCell>{guest.plusOneDiet ?? "—"}</TableCell>
-                      <TableCell>{formatBoolean(guest.accommodationNeeded)}</TableCell>
+                      <TableCell>{guest.availableCarSeats}</TableCell>
                       <TableCell className="max-w-xs whitespace-normal text-foreground/75">
                         {guest.message ?? "—"}
                       </TableCell>

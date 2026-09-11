@@ -228,7 +228,7 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
     if (!isAttending) {
       form.setValue("plusOne", false);
       form.setValue("plusOneDiet", undefined);
-      form.setValue("accommodationNeeded", false);
+      form.setValue("availableCarSeats", 0);
     }
   }, [isAttending, form]);
 
@@ -262,7 +262,7 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
           ? toDietOption(guest.plusOneDiet)
           : undefined,
         diet: toDietOption(guest.diet),
-        accommodationNeeded: guest.accommodationNeeded,
+        availableCarSeats: guest.availableCarSeats,
         message: guest.message ?? "",
       });
       setSubmitted(true);
@@ -288,7 +288,7 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
           if (!result.success) {
             setSubmitError(result.error);
             toast.add({
-              title: "Nie udało się wysłać RSVP",
+              title: "Nie udało się wysłać formularza",
               description: result.error,
               type: "error",
             });
@@ -354,7 +354,7 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
             className="mb-4 border-wedding-accent/40 bg-card text-primary"
           >
             <Heart className="size-3" aria-hidden />
-            RSVP
+            Uczestnictwo
           </Badge>
           <h2
             id="rsvp-heading"
@@ -383,7 +383,7 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
         <Card className="border-primary/15 bg-card shadow-sm">
           <CardHeader className="border-b border-primary/10">
             <CardTitle className="text-xl text-foreground">
-              Formularz RSVP
+              Formularz Uczestnictwa
             </CardTitle>
             <CardDescription>
               Pola oznaczone * są wymagane. Wszystkie dane traktujemy
@@ -400,8 +400,8 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                 Dziękujemy za odpowiedź!
               </p>
               <p className="mt-2 text-sm text-foreground/65">
-                Wasze RSVP zostało zapisane. Na tym urządzeniu możecie wrócić i
-                zaktualizować je w każdej chwili.
+                Wasza odpowiedź została zapisana. Na tym urządzeniu możecie
+                wrócić i zaktualizować ją w każdej chwili.
               </p>
               <RsvpContactLinks
                 intro="W razie pytań lub zmiany planów, możesz się z nami skontaktować:"
@@ -522,22 +522,29 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                       <FieldError message={errors.diet?.message} />
                     </div>
 
-                    {/* STREAMING_CHUNK: rsvp-field-accommodation */}
-                    <div className="space-y-3">
-                      <Label>Potrzeba noclegu *</Label>
-                      <Controller
-                        name="accommodationNeeded"
-                        control={control}
-                        render={({ field }) => (
-                          <BooleanChoice
-                            name="Potrzeba noclegu"
-                            value={field.value}
-                            onChange={field.onChange}
-                            trueLabel="Tak"
-                            falseLabel="Nie"
-                          />
-                        )}
+                    {/* STREAMING_CHUNK: rsvp-field-car-seats */}
+                    <div className="space-y-2">
+                      <Label htmlFor="availableCarSeats">
+                        Ile miejsc wolnych masz w samochodzie, aby kogoś zabrać
+                        z kościoła na salę weselną? *
+                      </Label>
+                      <Input
+                        id="availableCarSeats"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={9}
+                        aria-invalid={!!errors.availableCarSeats}
+                        className="min-h-11 border-primary/20 focus-visible:border-primary"
+                        {...register("availableCarSeats", {
+                          valueAsNumber: true,
+                        })}
                       />
+                      <p className="text-sm text-foreground/60">
+                        Wpisz 0, jeśli nie jedziesz autem albo nie masz wolnego
+                        miejsca.
+                      </p>
+                      <FieldError message={errors.availableCarSeats?.message} />
                     </div>
                   </>
                 )}
@@ -571,7 +578,7 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                   ) : (
                     <>
                       <Send aria-hidden />
-                      Wyślij RSVP
+                      Wyślij formularz
                     </>
                   )}
                 </Button>
@@ -581,7 +588,7 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                     onClick={startNewRsvp}
                     className="text-sm text-foreground/60 underline-offset-4 hover:text-primary hover:underline"
                   >
-                    Wypełniasz RSVP dla kogoś innego?
+                    Wypełniasz formularz dla kogoś innego?
                   </button>
                 ) : null}
               </CardFooter>
