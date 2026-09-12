@@ -22,6 +22,7 @@ import {
 import {
   EXPECTED_RSVP_SETTING_TOKEN,
   filterGuestRows,
+  isReservedAdminToken,
   parseExpectedRsvpCount,
 } from "@/lib/admin/expected-rsvp-storage";
 import { parseCarSeats, serializeCarSeats } from "@/lib/car-seats";
@@ -168,7 +169,7 @@ export async function loginAdmin(
 ): Promise<{ success: false; error: string }> {
   const normalizedPassword = password.trim().replace(/\r/g, "");
 
-  if (!verifyAdminPassword(normalizedPassword)) {
+  if (!(await verifyAdminPassword(normalizedPassword))) {
     if (process.env.NODE_ENV === "development") {
       console.error(
         "[Admin] Login failed — password mismatch.",
@@ -188,7 +189,7 @@ export async function loginAdmin(
     };
   }
 
-  await setAdminSession();
+  await setAdminSession(normalizedPassword);
   revalidatePath("/admin");
   redirect("/admin");
 }
@@ -486,7 +487,7 @@ export async function deleteAdminGuest(
       return { success: false, error: "Nie znaleziono gościa." };
     }
 
-    if (existing.token === EXPECTED_RSVP_SETTING_TOKEN) {
+    if (isReservedAdminToken(existing.token)) {
       return {
         success: false,
         error: "Nie można usunąć wiersza ustawień admina.",

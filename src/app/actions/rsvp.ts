@@ -9,6 +9,7 @@ import {
   getSupabaseEnvErrorMessage,
   SupabaseEnvError,
 } from "@/lib/supabase/env";
+import { isReservedAdminToken } from "@/lib/admin/expected-rsvp-storage";
 import { parseCarSeats, serializeCarSeats } from "@/lib/car-seats";
 import {
   rsvpSchema,
@@ -95,7 +96,7 @@ function mapGuestToFormValues(guest: {
 export async function getGuestByToken(
   token: string,
 ): Promise<GuestRsvpData | null> {
-  if (!token.trim()) return null;
+  if (!token.trim() || isReservedAdminToken(token)) return null;
 
   try {
     const supabase = await createClient();

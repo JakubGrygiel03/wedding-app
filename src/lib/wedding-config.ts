@@ -28,7 +28,7 @@ export const RECEPTION = {
   timeLabel: "17:30",
   endsAtIso: "2027-01-17T03:30:00",
   placeName: "Hotel Trylogia",
-  city: "Zielonka k. Warszawy",
+  city: "Sala Rycerska",
   address: "ul. Poniatowskiego 46/46A, 05-220 Zielonka",
 } as const;
 

@@ -19,6 +19,7 @@ import {
 import { logoutAdmin, type AdminGuestRow, type AdminStats } from "@/app/actions/admin";
 import { GuestDeleteDialog } from "@/components/admin/guest-delete-dialog";
 import { GuestEditDialog } from "@/components/admin/guest-edit-dialog";
+import { AdminPasswordSetting } from "@/components/admin/admin-password-setting";
 import { ExpectedRsvpSetting } from "@/components/admin/expected-rsvp-setting";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -495,6 +496,8 @@ export function GuestDashboard({
           progress={rsvpProgress}
           stats={stats}
         />
+
+        <AdminPasswordSetting />
       </div>
     </div>
   );
