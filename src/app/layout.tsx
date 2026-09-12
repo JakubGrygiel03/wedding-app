@@ -22,6 +22,13 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Adrianna & Jan | Wesele",
   description: "Zaproszenie na wesele Adrianny i Jana.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: [{ url: "/favicon.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
