@@ -49,11 +49,13 @@ function guestToFormValues(guest: AdminGuestRow): AdminGuestFormValues {
     guestName: guest.guestName,
     isAttending: guest.isAttending,
     plusOne: guest.plusOne,
+    plusOneName: guest.plusOneName ?? undefined,
     plusOneDiet: guest.plusOneDiet
       ? toDietOption(guest.plusOneDiet)
       : undefined,
     diet: guest.diet ? toDietOption(guest.diet) : "Standardowa",
     availableCarSeats: guest.availableCarSeats,
+    transportNeeded: guest.transportNeeded,
     message: guest.message ?? "",
   };
 }
@@ -157,13 +159,16 @@ export function GuestEditDialog({
   useEffect(() => {
     if (isAttending !== true) {
       form.setValue("plusOne", false);
+      form.setValue("plusOneName", undefined);
       form.setValue("plusOneDiet", undefined);
       form.setValue("availableCarSeats", 0);
+      form.setValue("transportNeeded", 0);
     }
   }, [isAttending, form]);
 
   useEffect(() => {
     if (!plusOne) {
+      form.setValue("plusOneName", undefined);
       form.setValue("plusOneDiet", undefined);
       return;
     }
@@ -311,23 +316,53 @@ export function GuestEditDialog({
               </div>
 
               {plusOne ? (
-                <div className="space-y-2">
-                  <Label htmlFor="guest-edit-plus-one-diet">Dieta +1</Label>
-                  <select
-                    id="guest-edit-plus-one-diet"
-                    aria-invalid={Boolean(errors.plusOneDiet)}
-                    className="flex min-h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                    {...register("plusOneDiet")}
-                  >
-                    {DIET_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <FieldError message={errors.plusOneDiet?.message} />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="guest-edit-plus-one-name">
+                      Imię i nazwisko osoby towarzyszącej
+                    </Label>
+                    <Input
+                      id="guest-edit-plus-one-name"
+                      aria-invalid={Boolean(errors.plusOneName)}
+                      {...register("plusOneName")}
+                    />
+                    <FieldError message={errors.plusOneName?.message} />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="guest-edit-plus-one-diet">Dieta +1</Label>
+                    <select
+                      id="guest-edit-plus-one-diet"
+                      aria-invalid={Boolean(errors.plusOneDiet)}
+                      className="flex min-h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                      {...register("plusOneDiet")}
+                    >
+                      {DIET_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    <FieldError message={errors.plusOneDiet?.message} />
+                  </div>
+                </>
               ) : null}
+
+              <div className="space-y-2">
+                <Label htmlFor="guest-edit-transport">
+                  Potrzebny transport (kościół → sala)
+                </Label>
+                <Input
+                  id="guest-edit-transport"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={9}
+                  aria-invalid={Boolean(errors.transportNeeded)}
+                  {...register("transportNeeded", { valueAsNumber: true })}
+                />
+                <FieldError message={errors.transportNeeded?.message} />
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="guest-edit-car-seats">

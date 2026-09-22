@@ -10,6 +10,12 @@ export const DIET_OPTIONS = [
 
 export type DietOption = (typeof DIET_OPTIONS)[number];
 
+const seatCountSchema = z
+  .number({ message: "Podaj liczbę całkowitą." })
+  .int("Podaj liczbę całkowitą.")
+  .min(0, "Liczba nie może być ujemna.")
+  .max(9, "Podaj liczbę od 0 do 9.");
+
 export const rsvpSchema = z
   .object({
     guestName: z
@@ -20,15 +26,17 @@ export const rsvpSchema = z
       message: "Potwierdź, czy weźmiesz udział w weselu.",
     }),
     plusOne: z.boolean(),
+    plusOneName: z
+      .string()
+      .trim()
+      .max(120, "Imię i nazwisko może mieć maksymalnie 120 znaków.")
+      .optional(),
     plusOneDiet: z.enum(DIET_OPTIONS).optional(),
     diet: z.enum(DIET_OPTIONS, {
       message: "Wybierz preferencje dietetyczne.",
     }),
-    availableCarSeats: z
-      .number({ message: "Podaj liczbę wolnych miejsc w aucie." })
-      .int("Podaj liczbę całkowitą.")
-      .min(0, "Liczba miejsc nie może być ujemna.")
-      .max(9, "Podaj liczbę miejsc od 0 do 9."),
+    availableCarSeats: seatCountSchema,
+    transportNeeded: seatCountSchema,
     message: z
       .string()
       .trim()
@@ -36,7 +44,17 @@ export const rsvpSchema = z
       .optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.isAttending && data.plusOne && !data.plusOneDiet) {
+    if (!(data.isAttending && data.plusOne)) return;
+
+    if (!data.plusOneName || data.plusOneName.length < 2) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Podaj imię i nazwisko osoby towarzyszącej.",
+        path: ["plusOneName"],
+      });
+    }
+
+    if (!data.plusOneDiet) {
       ctx.addIssue({
         code: "custom",
         message: "Wybierz preferencje dietetyczne osoby towarzyszącej.",
@@ -51,8 +69,10 @@ export const rsvpDefaultValues: RsvpFormValues = {
   guestName: "",
   isAttending: true,
   plusOne: false,
+  plusOneName: undefined,
   plusOneDiet: undefined,
   diet: "Standardowa",
   availableCarSeats: 0,
+  transportNeeded: 0,
   message: "",
 };

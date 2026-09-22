@@ -25,7 +25,7 @@ import {
   isReservedAdminToken,
   parseExpectedRsvpCount,
 } from "@/lib/admin/expected-rsvp-storage";
-import { parseCarSeats, serializeCarSeats } from "@/lib/car-seats";
+import { parseCarSeats } from "@/lib/car-seats";
 import { expectedRsvpCountSchema } from "@/lib/validations/admin-settings";
 
 export type AdminMutationResult =
@@ -42,8 +42,10 @@ export type AdminGuestRow = {
   isAttending: boolean | null;
   diet: string | null;
   plusOne: boolean;
+  plusOneName: string | null;
   plusOneDiet: string | null;
   availableCarSeats: number;
+  transportNeeded: number;
   message: string | null;
   updatedAt: string;
 };
@@ -57,6 +59,7 @@ export type AdminStats = {
   dietCounts: Record<string, number>;
   plusOneCount: number;
   carSeatsCount: number;
+  transportNeededCount: number;
 };
 
 export type AdminGuestsResult =
@@ -76,6 +79,8 @@ function mapGuestRow(guest: {
   plus_one: boolean | null;
   plus_one_name: string | null;
   plus_one_diet: string | null;
+  available_car_seats: number | null;
+  transport_needed: number | null;
   message: string | null;
   updated_at: string;
 }): AdminGuestRow {
@@ -85,8 +90,10 @@ function mapGuestRow(guest: {
     isAttending: guest.is_attending,
     diet: guest.dietary_requirements,
     plusOne: guest.plus_one ?? false,
+    plusOneName: guest.plus_one_name,
     plusOneDiet: guest.plus_one_diet,
-    availableCarSeats: parseCarSeats(guest.plus_one_name),
+    availableCarSeats: parseCarSeats(guest.available_car_seats),
+    transportNeeded: parseCarSeats(guest.transport_needed),
     message: guest.message,
     updatedAt: guest.updated_at,
   };
@@ -105,6 +112,7 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
   let respondedCount = 0;
   let plusOneCount = 0;
   let carSeatsCount = 0;
+  let transportNeededCount = 0;
 
   for (const guest of guests) {
     const headcount = getGuestHeadcount(guest);
@@ -132,6 +140,7 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
     if (guest.plusOne) plusOneCount += 1;
     if (guest.isAttending === true) {
       carSeatsCount += guest.availableCarSeats;
+      transportNeededCount += guest.transportNeeded;
     }
   }
 
@@ -144,6 +153,7 @@ function computeStats(guests: AdminGuestRow[]): AdminStats {
     dietCounts,
     plusOneCount,
     carSeatsCount,
+    transportNeededCount,
   };
 }
 
@@ -209,7 +219,7 @@ export async function getAdminGuests(): Promise<AdminGuestsResult> {
     const { data, error } = await supabase
       .from("guests")
       .select(
-        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_name, plus_one_diet, message, updated_at",
+        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_name, plus_one_diet, available_car_seats, transport_needed, message, updated_at",
       )
       .order("updated_at", { ascending: false });
 
@@ -247,10 +257,15 @@ function mapAdminGuestPayload(data: AdminGuestFormValues) {
     guest_name: data.guestName,
     is_attending: data.isAttending,
     plus_one: isAttending ? data.plusOne : false,
-    plus_one_name: isAttending ? serializeCarSeats(data.availableCarSeats) : "0",
+    plus_one_name:
+      isAttending && data.plusOne ? data.plusOneName?.trim() || null : null,
     plus_one_diet:
       isAttending && data.plusOne ? (data.plusOneDiet ?? null) : null,
     dietary_requirements: isAttending ? (data.diet ?? null) : null,
+    available_car_seats: isAttending
+      ? parseCarSeats(data.availableCarSeats)
+      : 0,
+    transport_needed: isAttending ? parseCarSeats(data.transportNeeded) : 0,
     accommodation_needed: false,
     message: data.message?.trim() || null,
     updated_at: new Date().toISOString(),

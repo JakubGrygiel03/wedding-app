@@ -17,7 +17,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from("guests")
       .select(
-        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_name, plus_one_diet, message, updated_at",
+        "id, token, guest_name, is_attending, dietary_requirements, plus_one, plus_one_name, plus_one_diet, available_car_seats, transport_needed, message, updated_at",
       )
       .order("updated_at", { ascending: false });
 
@@ -32,8 +32,10 @@ export async function GET() {
       isAttending: guest.is_attending,
       diet: guest.dietary_requirements,
       plusOne: guest.plus_one ?? false,
+      plusOneName: guest.plus_one_name,
       plusOneDiet: guest.plus_one_diet,
-      availableCarSeats: parseCarSeats(guest.plus_one_name),
+      availableCarSeats: parseCarSeats(guest.available_car_seats),
+      transportNeeded: parseCarSeats(guest.transport_needed),
       message: guest.message,
       updatedAt: guest.updated_at,
     }));

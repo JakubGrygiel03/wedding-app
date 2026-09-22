@@ -5,8 +5,10 @@ export type GuestSortColumn =
   | "isAttending"
   | "diet"
   | "plusOne"
+  | "plusOneName"
   | "plusOneDiet"
   | "availableCarSeats"
+  | "transportNeeded"
   | "message";
 
 export type SortDirection = "asc" | "desc";
@@ -57,10 +59,14 @@ function compareGuests(
       return compareText(a.diet, b.diet);
     case "plusOne":
       return compareBoolean(a.plusOne, b.plusOne);
+    case "plusOneName":
+      return compareText(a.plusOneName, b.plusOneName);
     case "plusOneDiet":
       return compareText(a.plusOneDiet, b.plusOneDiet);
     case "availableCarSeats":
       return compareNumber(a.availableCarSeats, b.availableCarSeats);
+    case "transportNeeded":
+      return compareNumber(a.transportNeeded, b.transportNeeded);
     case "message":
       return compareText(a.message, b.message);
     default:
@@ -85,7 +91,9 @@ export const GUEST_SORT_LABELS: Record<GuestSortColumn, string> = {
   isAttending: "Obecność",
   diet: "Dieta",
   plusOne: "+1",
+  plusOneName: "Imię +1",
   plusOneDiet: "Dieta +1",
   availableCarSeats: "Miejsca w aucie",
+  transportNeeded: "Potrzebny transport",
   message: "Wiadomość",
 };

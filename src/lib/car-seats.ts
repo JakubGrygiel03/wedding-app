@@ -1,4 +1,4 @@
-/** Car-seat count is stored in unused `plus_one_name` until a dedicated column exists. */
+/** Clamp guest-provided seat/transport counts to a safe 0–9 range. */
 
 export function parseCarSeats(value: string | number | null | undefined): number {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -9,10 +9,6 @@ export function parseCarSeats(value: string | number | null | undefined): number
   return Number.isFinite(parsed) ? clampCarSeats(parsed) : 0;
 }
 
-export function serializeCarSeats(value: number): string {
-  return String(clampCarSeats(value));
-}
-
-function clampCarSeats(value: number): number {
+export function clampCarSeats(value: number): number {
   return Math.max(0, Math.min(9, Math.trunc(value)));
 }

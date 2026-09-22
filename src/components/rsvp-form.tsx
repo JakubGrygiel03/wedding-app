@@ -227,13 +227,16 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
   useEffect(() => {
     if (!isAttending) {
       form.setValue("plusOne", false);
+      form.setValue("plusOneName", undefined);
       form.setValue("plusOneDiet", undefined);
       form.setValue("availableCarSeats", 0);
+      form.setValue("transportNeeded", 0);
     }
   }, [isAttending, form]);
 
   useEffect(() => {
     if (!plusOne) {
+      form.setValue("plusOneName", undefined);
       form.setValue("plusOneDiet", undefined);
       return;
     }
@@ -258,11 +261,13 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
         guestName: guest.guestName,
         isAttending: guest.isAttending ?? true,
         plusOne: guest.plusOne,
+        plusOneName: guest.plusOneName ?? undefined,
         plusOneDiet: guest.plusOneDiet
           ? toDietOption(guest.plusOneDiet)
           : undefined,
         diet: toDietOption(guest.diet),
         availableCarSeats: guest.availableCarSeats,
+        transportNeeded: guest.transportNeeded,
         message: guest.message ?? "",
       });
       setSubmitted(true);
@@ -497,16 +502,32 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                       </div>
 
                       {plusOne && (
-                        <div className="space-y-2 pl-7">
-                          <Label htmlFor="plusOneDiet">
-                            Dieta osoby towarzyszącej *
-                          </Label>
-                          <DietSelect
-                            id="plusOneDiet"
-                            error={!!errors.plusOneDiet}
-                            {...register("plusOneDiet")}
-                          />
-                          <FieldError message={errors.plusOneDiet?.message} />
+                        <div className="grid gap-4 pl-7 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="plusOneName">
+                              Imię i nazwisko osoby towarzyszącej *
+                            </Label>
+                            <Input
+                              id="plusOneName"
+                              placeholder="np. Jan Kowalski"
+                              aria-invalid={!!errors.plusOneName}
+                              className="min-h-11 border-primary/20 focus-visible:border-primary"
+                              {...register("plusOneName")}
+                            />
+                            <FieldError message={errors.plusOneName?.message} />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="plusOneDiet">
+                              Dieta osoby towarzyszącej *
+                            </Label>
+                            <DietSelect
+                              id="plusOneDiet"
+                              error={!!errors.plusOneDiet}
+                              {...register("plusOneDiet")}
+                            />
+                            <FieldError message={errors.plusOneDiet?.message} />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -520,6 +541,29 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                         {...register("diet")}
                       />
                       <FieldError message={errors.diet?.message} />
+                    </div>
+
+                    {/* STREAMING_CHUNK: rsvp-field-transport */}
+                    <div className="space-y-2">
+                      <Label htmlFor="transportNeeded">
+                        Ile osób potrzebuje transportu z kościoła na salę? *
+                      </Label>
+                      <Input
+                        id="transportNeeded"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={9}
+                        aria-invalid={!!errors.transportNeeded}
+                        className="min-h-11 border-primary/20 focus-visible:border-primary"
+                        {...register("transportNeeded", {
+                          valueAsNumber: true,
+                        })}
+                      />
+                      <p className="text-sm text-foreground/60">
+                        Wpisz 0, jeśli macie własny dojazd.
+                      </p>
+                      <FieldError message={errors.transportNeeded?.message} />
                     </div>
 
                     {/* STREAMING_CHUNK: rsvp-field-car-seats */}

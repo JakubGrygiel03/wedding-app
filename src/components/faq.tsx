@@ -41,6 +41,12 @@ export function buildDefaultFaqItems(rsvpDeadline: string): FaqEntry[] {
         "Największym prezentem jest dla nas Wasza obecność! Jeśli jednak chcielibyście nas obdarować, najbardziej ucieszą nas koperty, które pomogą nam zrealizować nasze wspólne marzenia zamiast kwiatów czy trunków.",
     },
     {
+      id: "dresscode",
+      question: "Jaki obowiązuje dresscode?",
+      answer:
+        "Z całą pewnością sprawdzi się współczesny elegancki ubiór weselny, ale jeśli macie ochotę zaskoczyć nas jakimś średniowiecznym akcentem to wasza fantazja również będzie mile widziana!",
+    },
+    {
       id: "parking",
       question: "Czy na miejscu dostępny jest parking?",
       answer:

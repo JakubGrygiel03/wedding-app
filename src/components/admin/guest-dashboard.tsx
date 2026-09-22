@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Bus,
   Car,
   Download,
   LogOut,
@@ -233,7 +234,7 @@ export function GuestDashboard({
               Odpowiedzi RSVP
             </h1>
             <p className="mt-2 text-sm text-foreground/65">
-              Podsumowanie gości, preferencji dietetycznych i miejsc w autach.
+              Podsumowanie gości, preferencji dietetycznych i transportu.
             </p>
           </div>
 
@@ -292,6 +293,11 @@ export function GuestDashboard({
             title="Miejsca w autach"
             value={stats.carSeatsCount}
             icon={Car}
+          />
+          <StatCard
+            title="Potrzebny transport"
+            value={stats.transportNeededCount}
+            icon={Bus}
           />
         </section>
 
@@ -387,8 +393,20 @@ export function GuestDashboard({
                     onSort={handleSort}
                   />
                   <SortableTableHead
+                    column="plusOneName"
+                    label="Imię +1"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
                     column="plusOneDiet"
                     label="Dieta +1"
+                    sort={sort}
+                    onSort={handleSort}
+                  />
+                  <SortableTableHead
+                    column="transportNeeded"
+                    label="Transport"
                     sort={sort}
                     onSort={handleSort}
                   />
@@ -412,7 +430,7 @@ export function GuestDashboard({
                 {sortedGuests.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={10}
                       className="py-10 text-center text-foreground/60"
                     >
                       Brak odpowiedzi RSVP.
@@ -429,7 +447,9 @@ export function GuestDashboard({
                       </TableCell>
                       <TableCell>{guest.diet ?? "—"}</TableCell>
                       <TableCell>{formatBoolean(guest.plusOne)}</TableCell>
+                      <TableCell>{guest.plusOneName ?? "—"}</TableCell>
                       <TableCell>{guest.plusOneDiet ?? "—"}</TableCell>
+                      <TableCell>{guest.transportNeeded}</TableCell>
                       <TableCell>{guest.availableCarSeats}</TableCell>
                       <TableCell className="max-w-xs whitespace-normal text-foreground/75">
                         {guest.message ?? "—"}

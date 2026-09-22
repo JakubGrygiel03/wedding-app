@@ -10,7 +10,7 @@ import {
   SupabaseEnvError,
 } from "@/lib/supabase/env";
 import { isReservedAdminToken } from "@/lib/admin/expected-rsvp-storage";
-import { parseCarSeats, serializeCarSeats } from "@/lib/car-seats";
+import { parseCarSeats } from "@/lib/car-seats";
 import {
   rsvpSchema,
   type RsvpFormValues,
@@ -24,9 +24,11 @@ export type GuestRsvpData = {
   guestName: string;
   isAttending: boolean | null;
   plusOne: boolean;
+  plusOneName: string | null;
   plusOneDiet: string | null;
   diet: string | null;
   availableCarSeats: number;
+  transportNeeded: number;
   message: string | null;
 };
 
@@ -80,15 +82,19 @@ function mapGuestToFormValues(guest: {
   plus_one_name: string | null;
   plus_one_diet: string | null;
   dietary_requirements: string | null;
+  available_car_seats: number | null;
+  transport_needed: number | null;
   message: string | null;
 }): GuestRsvpData {
   return {
     guestName: guest.guest_name,
     isAttending: guest.is_attending,
     plusOne: guest.plus_one ?? false,
+    plusOneName: guest.plus_one_name,
     plusOneDiet: guest.plus_one_diet,
     diet: guest.dietary_requirements,
-    availableCarSeats: parseCarSeats(guest.plus_one_name),
+    availableCarSeats: parseCarSeats(guest.available_car_seats),
+    transportNeeded: parseCarSeats(guest.transport_needed),
     message: guest.message,
   };
 }
@@ -103,7 +109,7 @@ export async function getGuestByToken(
     const { data, error } = await supabase
       .from("guests")
       .select(
-        "guest_name, is_attending, plus_one, plus_one_name, plus_one_diet, dietary_requirements, message",
+        "guest_name, is_attending, plus_one, plus_one_name, plus_one_diet, dietary_requirements, available_car_seats, transport_needed, message",
       )
       .eq("token", token)
       .maybeSingle();
@@ -164,10 +170,19 @@ export async function submitRsvp(
     guest_name: data.guestName,
     is_attending: data.isAttending,
     plus_one: data.isAttending ? data.plusOne : false,
-    plus_one_name: data.isAttending ? serializeCarSeats(data.availableCarSeats) : "0",
+    plus_one_name:
+      data.isAttending && data.plusOne
+        ? data.plusOneName?.trim() || null
+        : null,
     plus_one_diet:
       data.isAttending && data.plusOne ? data.plusOneDiet ?? null : null,
     dietary_requirements: data.isAttending ? data.diet : null,
+    available_car_seats: data.isAttending
+      ? parseCarSeats(data.availableCarSeats)
+      : 0,
+    transport_needed: data.isAttending
+      ? parseCarSeats(data.transportNeeded)
+      : 0,
     accommodation_needed: false,
     message: data.message?.trim() || null,
     updated_at: new Date().toISOString(),
