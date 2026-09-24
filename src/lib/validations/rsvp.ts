@@ -3,9 +3,6 @@ import { z } from "zod";
 export const DIET_OPTIONS = [
   "Standardowa",
   "Wegetariańska",
-  "Wegańska",
-  "Bezglutenowa",
-  "Bez laktozy",
 ] as const;
 
 export type DietOption = (typeof DIET_OPTIONS)[number];
