@@ -7,20 +7,15 @@ import {
 } from "@/lib/admin/password-storage";
 
 const ADMIN_COOKIE = "wedding_admin_session";
-const SESSION_MAX_AGE = 60 * 60 * 24; // 24h
+const SESSION_MAX_AGE = 60 * 60 * 24;
 const SESSION_SALT = "wedding-admin-session";
-
-const FALLBACK_ADMIN_PASSWORD = "wedding-admin-2027";
 
 function normalizePassword(value: string): string {
   return value.trim().replace(/^\uFEFF/, "").replace(/\r/g, "");
 }
 
-function readEnvPassword(
-  name: "ADMIN_PASSWORD" | "NEXT_PUBLIC_ADMIN_PASSWORD",
-): string | undefined {
-  const raw = process.env[name];
-
+function readEnvPassword(): string | undefined {
+  const raw = process.env.ADMIN_PASSWORD;
   if (raw == null) return undefined;
 
   const normalized = normalizePassword(raw);
@@ -28,22 +23,12 @@ function readEnvPassword(
 }
 
 export function getAdminPassword(): string {
-  return (
-    readEnvPassword("ADMIN_PASSWORD") ??
-    readEnvPassword("NEXT_PUBLIC_ADMIN_PASSWORD") ??
-    FALLBACK_ADMIN_PASSWORD
-  );
+  return readEnvPassword() ?? "";
 }
 
-export function getAdminPasswordSource():
-  | "ADMIN_PASSWORD"
-  | "NEXT_PUBLIC_ADMIN_PASSWORD"
-  | "fallback" {
-  if (readEnvPassword("ADMIN_PASSWORD")) return "ADMIN_PASSWORD";
-  if (readEnvPassword("NEXT_PUBLIC_ADMIN_PASSWORD")) {
-    return "NEXT_PUBLIC_ADMIN_PASSWORD";
-  }
-  return "fallback";
+export function getAdminPasswordSource(): "ADMIN_PASSWORD" | "stored" {
+  if (readEnvPassword()) return "ADMIN_PASSWORD";
+  return "stored";
 }
 
 function hashPassword(value: string): string {
@@ -55,14 +40,14 @@ function hashPassword(value: string): string {
 function hashesEqual(left: string, right: string): boolean {
   const a = Buffer.from(left);
   const b = Buffer.from(right);
-
   if (a.length !== b.length) return false;
-
   return timingSafeEqual(a, b);
 }
 
-function createEnvSessionToken(): string {
-  return hashPassword(getAdminPassword());
+function createEnvSessionToken(): string | null {
+  const password = getAdminPassword();
+  if (!password) return null;
+  return hashPassword(password);
 }
 
 function createStoredSessionToken(storedHash: string): string {
@@ -71,33 +56,31 @@ function createStoredSessionToken(storedHash: string): string {
 
 export async function verifyAdminPassword(input: string): Promise<boolean> {
   const normalizedInput = normalizePassword(input);
+  if (!normalizedInput) return false;
 
-  if (!normalizedInput) {
-    return false;
-  }
-
-  if (hashesEqual(hashPassword(normalizedInput), createEnvSessionToken())) {
+  const envToken = createEnvSessionToken();
+  if (envToken && hashesEqual(hashPassword(normalizedInput), envToken)) {
     return true;
   }
 
   const storedHash = await getStoredPasswordHash();
-  return Boolean(storedHash && verifyStoredPasswordHash(normalizedInput, storedHash));
+  return Boolean(
+    storedHash && verifyStoredPasswordHash(normalizedInput, storedHash),
+  );
 }
 
 export async function isAdminAuthenticated(): Promise<boolean> {
   const cookieStore = await cookies();
   const session = cookieStore.get(ADMIN_COOKIE)?.value;
+  if (!session) return false;
 
-  if (!session) {
-    return false;
-  }
-
-  if (hashesEqual(session, createEnvSessionToken())) {
-    return true;
-  }
+  const envToken = createEnvSessionToken();
+  if (envToken && hashesEqual(session, envToken)) return true;
 
   const storedHash = await getStoredPasswordHash();
-  return Boolean(storedHash && hashesEqual(session, createStoredSessionToken(storedHash)));
+  return Boolean(
+    storedHash && hashesEqual(session, createStoredSessionToken(storedHash)),
+  );
 }
 
 export async function setAdminSession(password?: string): Promise<void> {
@@ -106,20 +89,26 @@ export async function setAdminSession(password?: string): Promise<void> {
     ? await createSessionTokenForPassword(password)
     : createEnvSessionToken();
 
+  if (!token) {
+    throw new Error("Cannot create admin session without a password.");
+  }
+
   cookieStore.set(ADMIN_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: SESSION_MAX_AGE,
   });
 }
 
-async function createSessionTokenForPassword(password: string): Promise<string> {
+async function createSessionTokenForPassword(password: string): Promise<string | null> {
   const normalized = normalizePassword(password);
+  if (!normalized) return null;
 
-  if (hashesEqual(hashPassword(normalized), createEnvSessionToken())) {
-    return createEnvSessionToken();
+  const envToken = createEnvSessionToken();
+  if (envToken && hashesEqual(hashPassword(normalized), envToken)) {
+    return envToken;
   }
 
   const storedHash = await getStoredPasswordHash();
@@ -127,7 +116,7 @@ async function createSessionTokenForPassword(password: string): Promise<string> 
     return createStoredSessionToken(storedHash);
   }
 
-  return hashPassword(normalized);
+  return null;
 }
 
 export async function clearAdminSession(): Promise<void> {

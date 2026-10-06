@@ -12,6 +12,8 @@ import {
   getSupabaseEnvErrorMessage,
   SupabaseEnvError,
 } from "@/lib/supabase/env";
+import { getClientKey } from "@/lib/security/client-key";
+import { consumeRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { changeAdminPasswordSchema } from "@/lib/validations/admin-password";
 
 export async function changeAdminPassword(values: {
@@ -19,6 +21,20 @@ export async function changeAdminPassword(values: {
   newPassword: string;
   confirmPassword: string;
 }): Promise<{ success: false; error: string }> {
+  const clientKey = await getClientKey();
+  const rate = consumeRateLimit(
+    `admin-password:${clientKey}`,
+    RATE_LIMITS.adminPassword.limit,
+    RATE_LIMITS.adminPassword.windowMs,
+  );
+
+  if (!rate.ok) {
+    return {
+      success: false,
+      error: `Zbyt wiele prób. Spróbuj za ${rate.retryAfterSec} s.`,
+    };
+  }
+
   const parsed = changeAdminPasswordSchema.safeParse(values);
 
   if (!parsed.success) {

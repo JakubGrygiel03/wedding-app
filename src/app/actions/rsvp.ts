@@ -11,6 +11,8 @@ import {
 } from "@/lib/supabase/env";
 import { isReservedAdminToken } from "@/lib/admin/expected-rsvp-storage";
 import { parseCarSeats } from "@/lib/car-seats";
+import { getClientKey } from "@/lib/security/client-key";
+import { consumeRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import {
   rsvpSchema,
   type RsvpFormValues,
@@ -72,7 +74,7 @@ function mapSupabaseError(error: PostgrestError | Error): string {
     return "Nie udało się połączyć z bazą danych. Sprawdź internet i spróbuj ponownie.";
   }
 
-  return error.message;
+  return "Nie udało się zapisać odpowiedzi. Spróbuj ponownie za chwilę.";
 }
 
 function mapGuestToFormValues(guest: {
@@ -140,6 +142,20 @@ export async function submitRsvp(
   values: RsvpFormValues,
   token?: string,
 ): Promise<RsvpActionResult> {
+  const clientKey = await getClientKey();
+  const rate = consumeRateLimit(
+    `rsvp:${clientKey}`,
+    RATE_LIMITS.rsvpSubmit.limit,
+    RATE_LIMITS.rsvpSubmit.windowMs,
+  );
+
+  if (!rate.ok) {
+    return {
+      success: false,
+      error: `Zbyt wiele wysyłek z tej sieci. Spróbuj za ${rate.retryAfterSec} s.`,
+    };
+  }
+
   const parsed = rsvpSchema.safeParse(values);
 
   if (!parsed.success) {
@@ -249,7 +265,7 @@ export async function submitRsvp(
       logSupabaseError("unexpected submitRsvp error", error);
       return {
         success: false,
-        error: error.message,
+        error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie.",
       };
     }
 

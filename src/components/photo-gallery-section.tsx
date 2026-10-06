@@ -5,13 +5,11 @@ import { motion, useInView } from "framer-motion";
 import { Camera, Images } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { getPublicGalleryUrl } from "@/lib/media-assets";
 import { cn } from "@/lib/utils";
 
-const GALLERY_URL =
-  process.env.NEXT_PUBLIC_GALLERY_URL?.trim() || "#";
-
 function isGalleryAvailable(url: string) {
-  return url !== "#" && url.length > 0;
+  return url.length > 0 && url !== "#";
 }
 
 export interface PhotoGallerySectionProps {
@@ -24,7 +22,7 @@ export interface PhotoGallerySectionProps {
 export function PhotoGallerySection({
   title = "Galeria Wspomnień",
   subtitle = "Zdjęcia z naszego wyjątkowego dnia zostaną udostępnione w tym miejscu niedługo po weselu. Będziecie mogli tu obejrzeć pełny album oraz pobrać kadry na pamiątkę!",
-  galleryUrl = GALLERY_URL,
+  galleryUrl = getPublicGalleryUrl(),
   className,
 }: PhotoGallerySectionProps) {
   const headerRef = useRef<HTMLDivElement>(null);

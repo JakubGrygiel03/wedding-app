@@ -6,6 +6,7 @@ import { motion, useInView } from "framer-motion";
 import { ScrollText, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { MEDIA_ASSETS, SITE_IMAGE_QUALITY } from "@/lib/media-assets";
 
 export interface StoryStep {
   title: string;
@@ -28,33 +29,33 @@ export const DEFAULT_STORY_STEPS: StoryStep[] = [
   {
     title: "Spotkanie w świecie Wiedźmina",
     text: "Nasze szlaki skrzyżowały się po raz pierwszy na larpie (improwizowanej grze aktorskiej) — pełnym przygód, tajemnic i zaklęć. Żaden wątek scenariusza nie pchnął nas ku sobie specjalnie, to my sami nawiązaliśmy nić porozumienia zamieniając najpierw kilka słów, a potem kilka zdań, by w końcu zacząć rozumieć, że to nie było przypadkowe spotkanie. Gdy żegnaliśmy się po grze, nie wiedzieliśmy jeszcze, że losy naszego przeznaczenia splotły się nierozerwalnie.",
-    imageSrc: "/story/erk-1536.jpg",
+    imageSrc: MEDIA_ASSETS.story.meeting,
     imageAlt:
       "Adrianna i Jan w strojach historycznych przy ognisku — pierwsze spotkanie na larpie",
   },
   {
     title: "Bratnie dusze",
     text: "Z każdą rozmową i każdym dniem znajdowaliśmy rzeczy, które nas łączą. Nasze temperamenty zgrały się w piękny duet, a nasze wspólne zainteresowania i pasje sprawiały, że nie odstępowaliśmy się ani na krok. Rozumieliśmy się coraz lepiej, nawet bez słów, a pomysły w naszych głowach często pojawiały się w tym samym czasie! Wiecie jak to jest czytać komuś w myślach? Bo my tak!",
-    imageSrc: "/story/rekografia-0324.jpg",
+    imageSrc: MEDIA_ASSETS.story.souls,
     imageAlt:
       "Adrianna i Jan w strojach historycznych na łące — bratnie dusze",
   },
   {
     title: "Szkocka podróż",
     text: "Majestatyczna, surowa, ale i skąpana w pięknym zachodzącym słońcu Szkocja. Była to wyprawa pośród wzgórz smaganych jesiennym wiatrem i ruin dawnych zamków. W tym niesamowitym miejscu, pośród milczących kamieni pokrytych bluszczem i mchem oraz opadających pomarańczowych liści, Jan uklęknął, a wzruszona Adrianna powiedziała z radością TAK!",
-    imageSrc: "/story/step-3-proposal.png",
+    imageSrc: MEDIA_ASSETS.story.scotland,
     imageAlt: "Oświadczyny na tle szkockiego zamku",
   },
   {
     title: "Magiczny artefakt",
     text: "Aby przypieczętować tę obietnicę, na palcu pojawił się ten jedyny, wyjątkowy pierścionek. Nasza opowieść oficjalnie weszła w najważniejszy jak dotąd rozdział.",
-    imageSrc: "/story/step-4-ring.png",
+    imageSrc: MEDIA_ASSETS.story.ring,
     imageAlt: "Pierścionek zaręczynowy zakładany na palec",
   },
   {
     title: "Witajcie na naszych zaślubinach!",
     text: "16 Stycznia 2027 roku zbieramy wszystkich poszukiwaczy przygód, by świętowali razem z nami! Zapraszamy Was we wspólną podróż w klimatach dzielnych rycerzy i szlachetnych dam dworu, królewskich zamków i hucznych biesiad! Uczcijcie z nami ten dzień dobrą zabawą do białego rana!",
-    imageSrc: "/story/step-5-village.png",
+    imageSrc: MEDIA_ASSETS.story.wedding,
     imageAlt: "Zaproszenie na zaślubiny Adrianny i Jana",
   },
 ];
@@ -76,6 +77,8 @@ function StoryImage({ step, className }: { step: StoryStep; className?: string }
         alt={step.imageAlt}
         fill
         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 384px, 320px"
+        quality={SITE_IMAGE_QUALITY}
+        loading="lazy"
         className="object-cover object-center"
         placeholder="blur"
         blurDataURL={STORY_BLUR}
@@ -156,36 +159,35 @@ function StoryTimelineStep({
         />
       )}
 
-      {/* Mobile: text first, then image */}
-      <div className="order-1 lg:hidden">
-        <StoryText step={step} index={index} align="left" />
+      {/* Mobile: text first, then image. Desktop: one image, not a second copy. */}
+      <div
+        className={cn(
+          "order-1",
+          isEven ? "lg:order-3" : "lg:order-1",
+        )}
+      >
+        <StoryText
+          step={step}
+          index={index}
+          align={isEven ? "right" : "left"}
+        />
       </div>
-      <div className="order-2 lg:hidden">
-        <StoryImage step={step} />
+      <div className="hidden lg:block lg:order-2" aria-hidden />
+      <div
+        className={cn(
+          "order-2",
+          isEven ? "lg:order-1" : "lg:order-3",
+        )}
+      >
+        <StoryImage
+          step={step}
+          className={
+            isEven
+              ? "lg:w-full lg:max-w-sm lg:justify-self-end xl:max-w-md"
+              : "lg:w-full lg:max-w-sm lg:justify-self-start xl:max-w-md"
+          }
+        />
       </div>
-
-      {/* Desktop: alternating columns */}
-      {isEven ? (
-        <>
-          <div className="hidden lg:block lg:pr-4">
-            <StoryImage step={step} className="lg:w-full lg:max-w-sm lg:justify-self-end xl:max-w-md" />
-          </div>
-          <div className="hidden lg:block" aria-hidden />
-          <div className="hidden lg:block lg:pl-4">
-            <StoryText step={step} index={index} align="right" />
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="hidden lg:block lg:pr-4">
-            <StoryText step={step} index={index} align="left" />
-          </div>
-          <div className="hidden lg:block" aria-hidden />
-          <div className="hidden lg:block lg:pl-4">
-            <StoryImage step={step} className="lg:w-full lg:max-w-sm lg:justify-self-start xl:max-w-md" />
-          </div>
-        </>
-      )}
     </motion.article>
   );
 }

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 import { HeroDetailsCard } from "@/components/hero-details";
+import { MEDIA_ASSETS, SITE_IMAGE_QUALITY } from "@/lib/media-assets";
 import { cn } from "@/lib/utils";
 import { weddingTheme } from "@/lib/wedding-theme";
 
@@ -64,7 +65,7 @@ export function Hero({
   weddingDate,
   brideName = "Adrianna",
   groomName = "Jan",
-  backgroundImageSrc = "/hero-loch-hourn.jpg",
+  backgroundImageSrc = MEDIA_ASSETS.heroBackground,
   className,
 }: HeroProps) {
   const targetDate = useMemo(() => new Date(weddingDate), [weddingDate]);
@@ -97,6 +98,7 @@ export function Hero({
           fill
           priority
           sizes="100vw"
+          quality={SITE_IMAGE_QUALITY}
           className="object-cover object-center scale-105"
           placeholder="blur"
           blurDataURL={HERO_BLUR}

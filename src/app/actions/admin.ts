@@ -26,6 +26,8 @@ import {
   parseExpectedRsvpCount,
 } from "@/lib/admin/expected-rsvp-storage";
 import { parseCarSeats } from "@/lib/car-seats";
+import { getClientKey } from "@/lib/security/client-key";
+import { consumeRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { expectedRsvpCountSchema } from "@/lib/validations/admin-settings";
 
 export type AdminMutationResult =
@@ -177,6 +179,20 @@ async function fetchExpectedRsvpCount(
 export async function loginAdmin(
   password: string,
 ): Promise<{ success: false; error: string }> {
+  const clientKey = await getClientKey();
+  const rate = consumeRateLimit(
+    `admin-login:${clientKey}`,
+    RATE_LIMITS.adminLogin.limit,
+    RATE_LIMITS.adminLogin.windowMs,
+  );
+
+  if (!rate.ok) {
+    return {
+      success: false,
+      error: `Zbyt wiele prób logowania. Spróbuj za ${rate.retryAfterSec} s.`,
+    };
+  }
+
   const normalizedPassword = password.trim().replace(/\r/g, "");
 
   if (!(await verifyAdminPassword(normalizedPassword))) {
