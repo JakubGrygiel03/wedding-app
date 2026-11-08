@@ -15,6 +15,7 @@ import {
   getSupabaseEnvErrorMessage,
   SupabaseEnvError,
 } from "@/lib/supabase/env";
+import { getFriendlyDatabaseError } from "@/lib/supabase/errors";
 import {
   adminGuestSchema,
   type AdminGuestFormValues,
@@ -241,7 +242,7 @@ export async function getAdminGuests(): Promise<AdminGuestsResult> {
 
     if (error) {
       console.error("[Admin] getAdminGuests:", error.message);
-      return { success: false, error: error.message };
+      return { success: false, error: getFriendlyDatabaseError(error) };
     }
 
     const guests = filterGuestRows(data ?? []).map(mapGuestRow);
@@ -262,7 +263,7 @@ export async function getAdminGuests(): Promise<AdminGuestsResult> {
     const message = error instanceof Error ? error.message : "Nieznany błąd.";
     console.error("[Admin] getAdminGuests:", message);
 
-    return { success: false, error: message };
+    return { success: false, error: getFriendlyDatabaseError(error) };
   }
 }
 

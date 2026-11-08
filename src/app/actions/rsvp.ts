@@ -69,9 +69,13 @@ function mapSupabaseError(error: PostgrestError | Error): string {
     message.includes("fetch failed") ||
     message.includes("network") ||
     message.includes("econnrefused") ||
-    message.includes("failed to fetch")
+    message.includes("failed to fetch") ||
+    message.includes("error code 521") ||
+    message.includes("web server is down") ||
+    error.message.includes("<!DOCTYPE") ||
+    error.message.includes("<html")
   ) {
-    return "Nie udało się połączyć z bazą danych. Sprawdź internet i spróbuj ponownie.";
+    return "Baza Supabase jest niedostępna (prawdopodobnie pauza). Po Restore w dashboardzie Supabase spróbuj ponownie — dane gości nie giną przy pauzie.";
   }
 
   return "Nie udało się zapisać odpowiedzi. Spróbuj ponownie za chwilę.";

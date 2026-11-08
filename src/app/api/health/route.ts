@@ -6,6 +6,7 @@ import {
   getMissingSupabaseEnvVars,
   requireSupabaseEnvVars,
 } from "@/lib/supabase/env";
+import { getFriendlyDatabaseError } from "@/lib/supabase/errors";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -59,7 +60,7 @@ export async function GET() {
           ok: false,
           status: "degraded",
           database: "unreachable",
-          error: error.message,
+          error: getFriendlyDatabaseError(error),
           timestamp,
         },
         { status: 503 },
@@ -73,14 +74,12 @@ export async function GET() {
       timestamp,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-
     return NextResponse.json(
       {
         ok: false,
         status: "degraded",
         database: "unreachable",
-        error: message,
+        error: getFriendlyDatabaseError(error),
         timestamp,
       },
       { status: 503 },

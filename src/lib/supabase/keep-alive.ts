@@ -3,6 +3,7 @@ import {
   getSupabaseEnvErrorMessage,
   SupabaseEnvError,
 } from "@/lib/supabase/env";
+import { getFriendlyDatabaseError } from "@/lib/supabase/errors";
 
 export type KeepAliveResult =
   | {
@@ -39,7 +40,7 @@ export async function pingSupabaseKeepAlive(): Promise<KeepAliveResult> {
     };
 
     if (timeline.error || guests.error) {
-      const error =
+      const raw =
         timeline.error?.message ??
         guests.error?.message ??
         "Supabase keep-alive query failed";
@@ -49,7 +50,12 @@ export async function pingSupabaseKeepAlive(): Promise<KeepAliveResult> {
         guests: guests.error?.message,
       });
 
-      return { ok: false, error, timestamp, checks };
+      return {
+        ok: false,
+        error: getFriendlyDatabaseError(raw),
+        timestamp,
+        checks,
+      };
     }
 
     return {
@@ -71,7 +77,11 @@ export async function pingSupabaseKeepAlive(): Promise<KeepAliveResult> {
       error instanceof Error ? error.message : "Unknown keep-alive error";
     console.error("[KeepAlive]", message);
 
-    return { ok: false, error: message, timestamp };
+    return {
+      ok: false,
+      error: getFriendlyDatabaseError(error),
+      timestamp,
+    };
   }
 }
 
