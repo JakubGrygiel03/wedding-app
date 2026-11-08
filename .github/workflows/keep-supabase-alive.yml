@@ -2,9 +2,14 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    # Monday and Thursday at 07:00 UTC — well within Supabase's 7-day inactivity window.
-    - cron: "0 7 * * 1,4"
+    # Twice daily UTC — well inside Supabase free-tier ~7 day pause window.
+    - cron: "15 6 * * *"
+    - cron: "15 18 * * *"
   workflow_dispatch:
+
+env:
+  # Hard fallback so a missing secret cannot silently skip keep-alive again.
+  DEFAULT_KEEP_ALIVE_URL: https://adrianna-i-jan.pl/api/keep-alive
 
 jobs:
   ping:
@@ -15,11 +20,37 @@ jobs:
           KEEP_ALIVE_URL: ${{ secrets.KEEP_ALIVE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          if [ -z "$KEEP_ALIVE_URL" ] || [ -z "$CRON_SECRET" ]; then
-            echo "Skipping: set KEEP_ALIVE_URL and CRON_SECRET repository secrets."
-            exit 0
+          set -euo pipefail
+
+          TARGET_URL="${KEEP_ALIVE_URL:-$DEFAULT_KEEP_ALIVE_URL}"
+
+          if [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::CRON_SECRET is not set in GitHub Actions secrets."
+            echo "Add repository secret CRON_SECRET (same value as Vercel env CRON_SECRET)."
+            exit 1
           fi
 
-          curl --fail-with-body --silent --show-error \
+          echo "Pinging: ${TARGET_URL}"
+
+          RESPONSE_FILE="$(mktemp)"
+          HTTP_CODE="$(curl --silent --show-error --output "$RESPONSE_FILE" --write-out "%{http_code}" \
             --header "Authorization: Bearer ${CRON_SECRET}" \
-            "${KEEP_ALIVE_URL}"
+            --retry 3 --retry-delay 5 --retry-all-errors \
+            "${TARGET_URL}")"
+
+          echo "HTTP ${HTTP_CODE}"
+          cat "$RESPONSE_FILE"
+          echo
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Keep-alive failed with HTTP ${HTTP_CODE}. Supabase may be paused or misconfigured."
+            echo "Restore the project in Supabase Dashboard if it is paused, then re-run this workflow."
+            exit 1
+          fi
+
+          if ! grep -q '"ok":true' "$RESPONSE_FILE"; then
+            echo "::error::Keep-alive response did not report ok:true"
+            exit 1
+          fi
+
+          echo "Keep-alive succeeded."

@@ -260,32 +260,42 @@ NEXT_PUBLIC_GALLERY_URL=https://link-do-albumu-po-weselu.pl
 
 > ⚠️ **`SUPABASE_SERVICE_ROLE_KEY`** nigdy nie dodawaj z prefiksem `NEXT_PUBLIC_` — to klucz serwerowy z pełnymi uprawnieniami.
 
-### Keep-alive Supabase (Free tier)
+### Keep-alive Supabase (Free tier) — krytyczne
 
-Darmowy Supabase pauzuje projekt po **~7 dniach bez aktywności bazy**. Aplikacja wysyła lekki ping co dzień:
+Darmowy Supabase **pauzuje projekt po ~7 dniach bez aktywności bazy**. Gdy projekt jest pauzowany:
+- strona publiczna nadal się ładuje (harmonogram ma fallback),
+- **RSVP i panel `/admin` przestają działać** (`TypeError: fetch failed`).
 
-| Mechanizm | Harmonogram |
-|---|---|
-| **Vercel Cron** | codziennie o 07:00 UTC → `/api/keep-alive` |
-| **GitHub Actions** | poniedziałek i czwartek o 07:00 UTC (backup) |
+Aplikacja ma **podwójny keep-alive** (nie wolno wyłączać):
 
-**Konfiguracja na Vercel** (Settings → Environment Variables):
+| Mechanizm | Harmonogram | Co robi |
+|---|---|---|
+| **Vercel Cron** | codziennie 06:00 i 18:00 UTC → `/api/keep-alive` | Ping bazy (główny) |
+| **GitHub Actions** | codziennie 06:15 i 18:15 UTC | Backup ping + **fail z alertem**, jeśli baza padnie |
+| **`/api/health`** | publiczny | Status bazy dla monitoringu (np. UptimeRobot) |
 
-1. Po deployu **Vercel Cron działa automatycznie** (codziennie o 07:00 UTC) — nie wymaga dodatkowej konfiguracji.
-2. Opcjonalnie `CRON_SECRET` — ten sam secret ustaw też w GitHub Secrets, jeśli chcesz backup przez Actions.
+**Wymagane sekrety (już ustawione dla produkcji `adrianna-i-jan.pl`):**
 
-**Opcjonalnie GitHub** (Settings → Secrets → Actions):
+| Miejsce | Nazwa | Wartość |
+|---|---|---|
+| Vercel → Environment Variables | `CRON_SECRET` | losowy długi ciąg (Production + Preview) |
+| GitHub → Settings → Secrets → Actions | `CRON_SECRET` | **ten sam** co na Vercel |
+| GitHub → Settings → Secrets → Actions | `KEEP_ALIVE_URL` | `https://adrianna-i-jan.pl/api/keep-alive` |
 
-- `CRON_SECRET` — ten sam co na Vercel
-- `KEEP_ALIVE_URL` — `https://twoja-domena.vercel.app/api/keep-alive`
+> ⚠️ Workflow **nie pomija** już braku sekretów — kończy się błędem (dostaniesz maila z GitHub Actions).
 
-Test ręczny (produkcja):
+Test ręczny:
 
 ```bash
-curl -H "Authorization: Bearer TWOJ_CRON_SECRET" https://twoja-domena.vercel.app/api/keep-alive
+# Health (publiczny)
+curl https://adrianna-i-jan.pl/api/health
+
+# Keep-alive (wymaga CRON_SECRET)
+curl -H "Authorization: Bearer TWOJ_CRON_SECRET" https://adrianna-i-jan.pl/api/keep-alive
 ```
 
-Odpowiedź `{"ok":true,...}` oznacza, że Supabase dostał zapytanie do bazy.
+Oczekiwane odpowiedzi: `{"ok":true,...}`.  
+Jeśli health zwraca `database: "unreachable"` → wejdź na [Supabase Dashboard](https://supabase.com/dashboard) i kliknij **Restore** przy pauzowanym projekcie.
 
 ### 4. Migracja bazy (Supabase SQL Editor)
 
