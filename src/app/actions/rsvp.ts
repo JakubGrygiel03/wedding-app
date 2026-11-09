@@ -1,22 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import type { PostgrestError } from "@supabase/supabase-js";
 
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
-import {
-  getSupabaseEnvErrorMessage,
-  SupabaseEnvError,
-} from "@/lib/supabase/env";
 import { isReservedAdminToken } from "@/lib/admin/expected-rsvp-storage";
+import { persistRsvpSubmission } from "@/lib/rsvp/submit";
+import { createClient } from "@/lib/supabase/server";
+import { SupabaseEnvError } from "@/lib/supabase/env";
 import { parseCarSeats } from "@/lib/car-seats";
 import { getClientKey } from "@/lib/security/client-key";
 import { consumeRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
-import {
-  rsvpSchema,
-  type RsvpFormValues,
-} from "@/lib/validations/rsvp";
+import type { RsvpFormValues } from "@/lib/validations/rsvp";
 
 export type RsvpActionResult =
   | { success: true; token: string }
@@ -46,39 +39,6 @@ function logSupabaseError(context: string, error: PostgrestError | Error): void 
   }
 
   console.error(`[RSVP] ${context}:`, error.message);
-}
-
-function mapSupabaseError(error: PostgrestError | Error): string {
-  if ("code" in error) {
-    if (error.code === "42P01") {
-      return "Tabela guests nie istnieje w Supabase. Uruchom migrację SQL.";
-    }
-
-    if (error.code === "PGRST204" || error.code === "42703") {
-      return "Baza nie rozpoznaje jednego z pól formularza. Odśwież stronę i spróbuj ponownie.";
-    }
-
-    if (error.code === "PGRST301" || error.code === "42501") {
-      return "Brak uprawnień do zapisu RSVP. Skontaktuj się z organizatorami.";
-    }
-  }
-
-  const message = error.message.toLowerCase();
-
-  if (
-    message.includes("fetch failed") ||
-    message.includes("network") ||
-    message.includes("econnrefused") ||
-    message.includes("failed to fetch") ||
-    message.includes("error code 521") ||
-    message.includes("web server is down") ||
-    error.message.includes("<!DOCTYPE") ||
-    error.message.includes("<html")
-  ) {
-    return "Baza Supabase jest niedostępna (prawdopodobnie pauza). Po Restore w dashboardzie Supabase spróbuj ponownie — dane gości nie giną przy pauzie.";
-  }
-
-  return "Nie udało się zapisać odpowiedzi. Spróbuj ponownie za chwilę.";
 }
 
 function mapGuestToFormValues(guest: {
@@ -142,6 +102,7 @@ export async function getGuestByToken(
   }
 }
 
+/** Kept for compatibility; the public form uses POST /api/rsvp. */
 export async function submitRsvp(
   values: RsvpFormValues,
   token?: string,
@@ -160,124 +121,5 @@ export async function submitRsvp(
     };
   }
 
-  const parsed = rsvpSchema.safeParse(values);
-
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.issues[0]?.message ?? "Nieprawidłowe dane formularza.",
-    };
-  }
-
-  const data = parsed.data;
-
-  let supabase;
-
-  try {
-    supabase = createAdminClient();
-  } catch (error) {
-    if (error instanceof SupabaseEnvError) {
-      return {
-        success: false,
-        error: getSupabaseEnvErrorMessage(error),
-      };
-    }
-
-    throw error;
-  }
-
-  const payload = {
-    guest_name: data.guestName,
-    is_attending: data.isAttending,
-    plus_one: data.isAttending ? data.plusOne : false,
-    plus_one_name:
-      data.isAttending && data.plusOne
-        ? data.plusOneName?.trim() || null
-        : null,
-    plus_one_diet:
-      data.isAttending && data.plusOne ? data.plusOneDiet ?? null : null,
-    dietary_requirements: data.isAttending ? data.diet : null,
-    available_car_seats: data.isAttending
-      ? parseCarSeats(data.availableCarSeats)
-      : 0,
-    transport_needed: data.isAttending
-      ? parseCarSeats(data.transportNeeded)
-      : 0,
-    accommodation_needed: false,
-    message: data.message?.trim() || null,
-    updated_at: new Date().toISOString(),
-  };
-
-  try {
-    if (token?.trim()) {
-      const { data: existing, error: fetchError } = await supabase
-        .from("guests")
-        .select("id")
-        .eq("token", token.trim())
-        .maybeSingle();
-
-      if (fetchError) {
-        logSupabaseError("fetch guest by token", fetchError);
-        return { success: false, error: mapSupabaseError(fetchError) };
-      }
-
-      if (!existing) {
-        return { success: false, error: "Nie znaleziono zaproszenia o podanym tokenie." };
-      }
-
-      const { error: updateError } = await supabase
-        .from("guests")
-        .update(payload)
-        .eq("token", token.trim());
-
-      if (updateError) {
-        logSupabaseError("update guest RSVP", updateError);
-        return {
-          success: false,
-          error: mapSupabaseError(updateError),
-        };
-      }
-
-      revalidatePath("/");
-      revalidatePath("/admin");
-      revalidatePath(`/rsvp/${token.trim()}`);
-
-      return { success: true, token: token.trim() };
-    }
-
-    const newToken = crypto.randomUUID();
-
-    const { error: insertError } = await supabase.from("guests").insert({
-      ...payload,
-      token: newToken,
-    });
-
-    if (insertError) {
-      logSupabaseError("insert guest RSVP", insertError);
-      return {
-        success: false,
-        error: mapSupabaseError(insertError),
-      };
-    }
-
-    revalidatePath("/");
-    revalidatePath("/admin");
-
-    return { success: true, token: newToken };
-  } catch (error) {
-    if (error instanceof Error) {
-      logSupabaseError("unexpected submitRsvp error", error);
-      return {
-        success: false,
-        error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie.",
-      };
-    }
-
-    console.error("[RSVP] unexpected submitRsvp error:", error);
-
-    return {
-      success: false,
-      error: "Wystąpił nieoczekiwany błąd. Spróbuj ponownie.",
-    };
-  }
+  return persistRsvpSubmission(values, token);
 }

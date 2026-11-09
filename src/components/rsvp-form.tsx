@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { Heart, Loader2, Phone, Send, UserPlus } from "lucide-react";
 
-import { getGuestByToken, submitRsvp } from "@/app/actions/rsvp";
+import { getGuestByToken, type RsvpActionResult } from "@/app/actions/rsvp";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -292,13 +292,49 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
 
       startTransition(async () => {
         try {
-          const result = await submitRsvp(values, guestToken ?? token);
+          const normalizedValues: RsvpFormValues = {
+            ...values,
+            availableCarSeats: Number.isFinite(values.availableCarSeats)
+              ? values.availableCarSeats
+              : 0,
+            transportNeeded: Number.isFinite(values.transportNeeded)
+              ? values.transportNeeded
+              : 0,
+          };
 
-          if (!result.success) {
-            setSubmitError(result.error);
+          const response = await fetch("/api/rsvp", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              values: normalizedValues,
+              token: guestToken ?? token,
+            }),
+            cache: "no-store",
+          });
+
+          let result: RsvpActionResult;
+
+          try {
+            result = (await response.json()) as RsvpActionResult;
+          } catch {
+            throw new Error(
+              "Serwer zwrócił nieprawidłową odpowiedź. Odśwież stronę i spróbuj ponownie.",
+            );
+          }
+
+          if (!response.ok || !result.success) {
+            const errorMessage =
+              !result.success && "error" in result
+                ? result.error
+                : "Nie udało się zapisać odpowiedzi. Spróbuj ponownie.";
+
+            setSubmitError(errorMessage);
             toast.add({
               title: "Nie udało się wysłać formularza",
-              description: result.error,
+              description: errorMessage,
               type: "error",
             });
             return;
@@ -308,20 +344,22 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
           localStorage.setItem(RSVP_TOKEN_STORAGE_KEY, result.token);
           setSubmitted(true);
 
-          if (values.isAttending && !guestToken) {
+          if (normalizedValues.isAttending && !guestToken) {
             fireConfetti();
           }
 
           toast.add({
-            title: values.isAttending ? "Dziękujemy!" : "Odpowiedź zapisana",
-            description: values.isAttending
+            title: normalizedValues.isAttending
+              ? "Dziękujemy!"
+              : "Odpowiedź zapisana",
+            description: normalizedValues.isAttending
               ? "Cieszymy się, że będziecie z nami!"
               : "Szkoda, że nie możecie być — dziękujemy za informację.",
             type: "success",
           });
 
           reset({
-            ...values,
+            ...normalizedValues,
           });
         } catch (error) {
           console.error("[RSVP] submit failed on client:", error);
@@ -337,12 +375,14 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
             );
 
           const description = looksLikeNetwork
-            ? "Nie udało się połączyć z serwerem. Sprawdź internet, odśwież stronę (najlepiej bez www) i spróbuj ponownie."
+            ? "Nie udało się połączyć z serwerem. Sprawdź internet, odśwież stronę i spróbuj ponownie."
             : message;
 
           setSubmitError(description);
           toast.add({
-            title: looksLikeNetwork ? "Błąd połączenia" : "Nie udało się wysłać formularza",
+            title: looksLikeNetwork
+              ? "Błąd połączenia"
+              : "Nie udało się wysłać formularza",
             description,
             type: "error",
           });
@@ -575,6 +615,13 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                         className="min-h-11 border-primary/20 focus-visible:border-primary"
                         {...register("transportNeeded", {
                           valueAsNumber: true,
+                          setValueAs: (value) => {
+                            if (value === "" || value === null || value === undefined) {
+                              return 0;
+                            }
+                            const parsed = Number(value);
+                            return Number.isFinite(parsed) ? parsed : 0;
+                          },
                         })}
                       />
                       <p className="text-sm text-foreground/60">
@@ -599,6 +646,13 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
                         className="min-h-11 border-primary/20 focus-visible:border-primary"
                         {...register("availableCarSeats", {
                           valueAsNumber: true,
+                          setValueAs: (value) => {
+                            if (value === "" || value === null || value === undefined) {
+                              return 0;
+                            }
+                            const parsed = Number(value);
+                            return Number.isFinite(parsed) ? parsed : 0;
+                          },
                         })}
                       />
                       <p className="text-sm text-foreground/60">
