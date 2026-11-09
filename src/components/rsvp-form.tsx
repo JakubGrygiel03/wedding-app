@@ -192,15 +192,19 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
   }, []);
 
   const fireConfetti = useCallback(() => {
-    fireConfettiRef.current?.({
-      particleCount: 100,
-      spread: 55,
-      startVelocity: 32,
-      origin: { x: 0.5, y: 0.58 },
-      gravity: 1.05,
-      ticks: 180,
-      colors: [...CONFETTI_COLORS],
-    });
+    try {
+      fireConfettiRef.current?.({
+        particleCount: 100,
+        spread: 55,
+        startVelocity: 32,
+        origin: { x: 0.5, y: 0.58 },
+        gravity: 1.05,
+        ticks: 180,
+        colors: [...CONFETTI_COLORS],
+      });
+    } catch (error) {
+      console.error("[RSVP] confetti failed:", error);
+    }
   }, []);
 
   const form = useForm<RsvpFormValues>({
@@ -319,14 +323,27 @@ export function RsvpForm({ token, defaultValues, className }: RsvpFormProps) {
           reset({
             ...values,
           });
-        } catch {
-          const networkError =
-            "Nie udało się połączyć z serwerem. Sprawdź połączenie z internetem i spróbuj ponownie.";
+        } catch (error) {
+          console.error("[RSVP] submit failed on client:", error);
 
-          setSubmitError(networkError);
+          const message =
+            error instanceof Error && error.message.trim().length > 0
+              ? error.message
+              : "Nie udało się wysłać formularza. Odśwież stronę i spróbuj ponownie.";
+
+          const looksLikeNetwork =
+            /fetch|network|failed to load|load failed|timeout|aborted/i.test(
+              message,
+            );
+
+          const description = looksLikeNetwork
+            ? "Nie udało się połączyć z serwerem. Sprawdź internet, odśwież stronę (najlepiej bez www) i spróbuj ponownie."
+            : message;
+
+          setSubmitError(description);
           toast.add({
-            title: "Błąd połączenia",
-            description: networkError,
+            title: looksLikeNetwork ? "Błąd połączenia" : "Nie udało się wysłać formularza",
+            description,
             type: "error",
           });
         }

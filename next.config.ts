@@ -38,7 +38,20 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: "48kb",
+      // Both hosts currently resolve without redirect; allow both so RSVP
+      // Server Actions don't fail CSRF/origin checks on mobile/www.
+      allowedOrigins: ["adrianna-i-jan.pl", "www.adrianna-i-jan.pl"],
     },
+  },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.adrianna-i-jan.pl" }],
+        destination: "https://adrianna-i-jan.pl/:path*",
+        permanent: true,
+      },
+    ];
   },
   async headers() {
     return [
